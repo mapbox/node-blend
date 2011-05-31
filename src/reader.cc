@@ -3,10 +3,18 @@
 PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
         ImageReader(src, len), depth(0), color(-1) {
     // Decode PNG header.
-    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, errorHandler, errorHandler);
     assert(png);
     info = png_create_info_struct(png);
     assert(info);
+
+    if (setjmp(png_jmpbuf(png))) {
+        png_destroy_read_struct(&png, &info, NULL);
+        width = 0;
+        height = 0;
+        return;
+    }
+
     png_set_read_fn(png, this, readCallback);
     png_read_info(png, info);
     png_get_IHDR(png, info, &width, &height, &depth, &color, NULL, NULL, NULL);
@@ -14,7 +22,7 @@ PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
 }
 
 void PNGImageReader::readCallback(png_structp png, png_bytep data, png_size_t length) {
-    PNGImageReader* reader = static_cast<PNGImageReader*>(png_get_io_ptr(png));
+    PNGImageReader* reader = static_cast<PNGImageReader*>(png_get_error_ptr(png));
 
     // Read `length` bytes into `data`.
     if (reader->pos + length > reader->length) {
@@ -26,6 +34,16 @@ void PNGImageReader::readCallback(png_structp png, png_bytep data, png_size_t le
     reader->pos += length;
 }
 
+void PNGImageReader::errorHandler(png_structp png, png_const_charp error_msg) {
+    PNGImageReader* reader = static_cast<PNGImageReader*>(png_get_io_ptr(png));
+
+    reader->message = error_msg;
+
+    if (png) {
+        longjmp(png->jmpbuf, 1);
+    }
+    exit(1);
+}
 
 unsigned char* PNGImageReader::decode() {
     // From http://trac.mapnik.org/browser/trunk/src/png_reader.cpp
@@ -160,14 +178,12 @@ unsigned char* JPEGImageReader::decode() {
     return surface;
 }
 
-
-
 ImageReader* ImageReader::create(unsigned char* src, size_t len) {
     if (png_sig_cmp((png_bytep)src, 0, 8) == 0) {
         return new PNGImageReader(src, len);
     } else if (src[0] == 255 && src[1] == 216) {
         return new JPEGImageReader(src, len);
     } else {
-        return NULL;
+        return new ImageReader("Unknown image format");
     }
 }

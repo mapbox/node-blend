@@ -13,8 +13,8 @@ if (process.setMaxListeners) process.setMaxListeners(0);
 exports['test blending bogus JPEG image'] = function(beforeExit) {
     var completed = false;
     var buffer = new Buffer(32);
-    buffer[0] = 255;
-    buffer[1] = 216;
+    buffer[0] = 0xFF;
+    buffer[1] = 0xD8;
     blend([
         buffer,
         fs.readFileSync('test/fixture/2.png')

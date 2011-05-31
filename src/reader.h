@@ -14,12 +14,11 @@
 
 class ImageReader {
 public:
-    inline unsigned long getWidth() { return width; }
-    inline unsigned long getheight() { return height; }
-    inline bool getAlpha() { return alpha; }
-    virtual unsigned char* decode() = 0;
+    virtual unsigned char* decode() { return NULL; };
     ImageReader(unsigned char* src, size_t len) : width(0), height(0),
         alpha(false), source(src), length(len), pos(0) {}
+    ImageReader(const char* msg) : width(0), height(0), alpha(false),
+        message(msg), source(NULL), length(0), pos(0) {}
     static ImageReader* create(unsigned char* surface, size_t len);
 
     unsigned long width;
@@ -40,6 +39,8 @@ public:
 
 protected:
     static void readCallback(png_structp png, png_bytep data, png_size_t length);
+    static void errorHandler(png_structp png, png_const_charp error_msg);
+    static void warningHandler(png_structp png_ptr, png_const_charp warning_msg);
 
 protected:
     int depth;
@@ -66,7 +67,7 @@ protected:
 
 protected:
     jpeg_decompress_struct info;
-	JPEGErrorManager err;
+    JPEGErrorManager err;
 };
 
 #endif

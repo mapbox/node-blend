@@ -56,6 +56,31 @@ exports['test blend function with bogus buffer'] = function(beforeExit) {
     blend([ new Buffer(1024), new Buffer(1024) ], function(err, data) {
         completed = true;
         assert.ok(err);
+        assert.equal(err.message, "Unknown image format");
+    });
+
+    beforeExit(function() { assert.ok(completed); });
+};
+
+exports['test blend function with semi-bogus buffer'] = function(beforeExit) {
+    var completed = false;
+    var buffer = new Buffer('\x89\x50\x4E\x47\x0D\x0A\x1A\x0A' + Array(48).join('\0'), 'binary');
+    blend([ buffer, images[1] ], function(err, data) {
+        completed = true;
+        assert.ok(err);
+        assert.equal(err.message, 'Error: [00][00][00][00]: invalid chunk type');
+    });
+
+    beforeExit(function() { assert.ok(completed); });
+};
+
+exports['test blend function with buffer that only contains the header'] = function(beforeExit) {
+    var completed = false;
+    var buffer = new Buffer('\x89\x50\x4E\x47\x0D\x0A\x1A\x0A', 'binary');
+    blend([ buffer, images[1] ], function(err, data) {
+        completed = true;
+        assert.ok(err);
+        assert.equal(err.message, 'Read Error');
     });
 
     beforeExit(function() { assert.ok(completed); });

@@ -218,9 +218,7 @@ int EIO_Blend(eio_req *req) {
         ImageReader* layer = ImageReader::create((*image).first, (*image).second);
 
         // Skip invalid images.
-        if (layer == NULL) continue;
-
-        if (layer->width == 0 || layer->height == 0) {
+        if (layer == NULL || layer->width == 0 || layer->height == 0) {
             baton->error = true;
             baton->message = layer->message;
             delete layer;
