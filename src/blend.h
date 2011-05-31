@@ -4,6 +4,7 @@
 #include <v8.h>
 #include <node.h>
 #include <png.h>
+#include <jpeglib.h>
 
 #include <cstdlib>
 #include <cstring>

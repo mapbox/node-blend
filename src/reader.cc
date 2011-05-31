@@ -1,7 +1,7 @@
 #include "reader.h"
 
-PNGImageReader::PNGImageReader(const unsigned char* src, size_t len) :
-        ImageReader(src, len) {
+PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
+        ImageReader(src, len), depth(0), color(-1) {
     // Decode PNG header.
     png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     assert(png);
@@ -70,48 +70,67 @@ unsigned char* PNGImageReader::decode() {
 
     png_read_end(png, NULL);
 
-    return surface;
-}
-
-PNGImageReader::~PNGImageReader() {
     png_destroy_read_struct(&png, &info, NULL);
     png = NULL;
     info = NULL;
+
+    return surface;
 }
 
 
 
-JPEGImageReader::JPEGImageReader(const unsigned char* src, size_t len) :
+JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
         ImageReader(src, len) {
-    //  Allocate and initialize a JPEG decompression object
-    //  Specify the source of the compressed data (eg, a file)
-    //  Call jpeg_read_header() to obtain image info
+    info.err = jpeg_std_error(&err);
+    jpeg_create_decompress(&info);
+    jpeg_mem_src(&info, src, len);
+    jpeg_read_header(&info, TRUE);
+    width = info.image_width;
+    height = info.image_height;
+    alpha = false;
+    assert(info.data_precision == 8);
+    assert(info.num_components == 3);
 }
 
 unsigned char* JPEGImageReader::decode() {
-    //  Set parameters for decompression
-    //  jpeg_start_decompress(...);
-    //  while (scan lines remain to be read)
-    //      jpeg_read_scanlines(...);
-    //  jpeg_finish_decompress(...);
-    //  Release the JPEG decompression object
+    size_t length = width * height * 4;
+    size_t offset = 0;
+    unsigned char* surface = (unsigned char*)malloc(length);
+    assert(surface);
+
+    jpeg_start_decompress(&info);
+    while (info.output_scanline < info.output_height) {
+        assert(offset < length);
+        unsigned char* destination = surface + offset;
+        jpeg_read_scanlines(&info, &destination, width * 3);
+
+        // Convert from RGB to RGBA
+        unsigned int* dest = (unsigned int*)destination;
+        for (int i = width - 1, pos = i * 3; i >= 0; pos = --i * 3) {
+            // Read 3 bytes and write it to 4 bytes.
+            dest[i] = 0xFF << 24 |
+                      destination[pos] |
+                      destination[pos + 1] << 8 |
+                      destination[pos + 2] << 16;
+        }
+
+        offset += width * 4;
+    }
+
+    jpeg_finish_decompress(&info);
+    jpeg_destroy_decompress(&info);
+
+    return surface;
 }
 
-JPEGImageReader::~JPEGImageReader() {
-
-}
 
 
-
-
-ImageReader* ImageReader::create(const unsigned char* src, size_t len) {
+ImageReader* ImageReader::create(unsigned char* src, size_t len) {
     if (png_sig_cmp((png_bytep)src, 0, 8) == 0) {
         return new PNGImageReader(src, len);
-    } else if (src[0] == '\xFF' && src[1] == '\xD8') {
+    } else if (src[0] == 255 && src[1] == 216) {
         return new JPEGImageReader(src, len);
     }
 
     return NULL;
 }
-
-ImageReader::~ImageReader() {}
