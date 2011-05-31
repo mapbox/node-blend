@@ -1,7 +1,12 @@
 var assert = require('assert');
 var Buffer = require('buffer').Buffer;
+var crypto = require('crypto');
 var fs = require('fs');
 var blend = require('..');
+
+function md5(buffer) {
+    return crypto.createHash('md5').update(buffer).digest('hex');
+}
 
 if (process.setMaxListeners) process.setMaxListeners(0);
 
@@ -46,6 +51,7 @@ exports['test blending a jpeg image'] = function(beforeExit) {
     ], function(err, data) {
         completed = true;
         if (err) throw err;
+        assert.equal('4e43abdd243ccafc80a7da9b0efe3086', md5(data));
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -60,6 +66,7 @@ exports['test blending a grayscale jpeg image'] = function(beforeExit) {
     ], function(err, data) {
         completed = true;
         if (err) throw err;
+        assert.equal('6a11a65c397f9f3929791703dd61645f', md5(data));
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -75,6 +82,7 @@ exports['test blending a color jpeg image'] = function(beforeExit) {
     ], function(err, data) {
         completed = true;
         if (err) throw err;
+        assert.equal('393a40fd34bfd58f4d5c5e658f6f00f1', md5(data));
     });
 
     beforeExit(function() { assert.ok(completed); });
