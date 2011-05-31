@@ -3,6 +3,7 @@
 
 #include <png.h>
 #include <jpeglib.h>
+#include <setjmp.h>
 #include <zlib.h>
 #include <assert.h>
 

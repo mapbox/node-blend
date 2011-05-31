@@ -243,6 +243,14 @@ int EIO_Blend(eio_req *req) {
         }
 
         images[size] = (unsigned int*)layer->decode();
+        if (images[size] == NULL) {
+            // Decoding failed.
+            baton->error = true;
+            baton->message = layer->message;
+            delete layer;
+            break;
+        }
+
         size++;
 
         if (!layer->alpha) {

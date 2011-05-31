@@ -3,6 +3,7 @@ var Buffer = require('buffer').Buffer;
 var fs = require('fs');
 var blend = require('..');
 
+if (process.setMaxListeners) process.setMaxListeners(0);
 
 var images = [
     fs.readFileSync('test/fixture/1.png'),
