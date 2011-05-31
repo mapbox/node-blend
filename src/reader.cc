@@ -77,11 +77,18 @@ unsigned char* PNGImageReader::decode() {
     return surface;
 }
 
-
-
 JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
         ImageReader(src, len) {
-    info.err = jpeg_std_error(&err);
+    err.reader = this;
+    info.err = jpeg_std_error(&err.pub);
+    err.pub.error_exit = errorHandler;
+    err.pub.output_message = errorMessage;
+
+    if (setjmp(err.jump)) {
+        width = 0;
+        height = 0;
+        return;
+    }
     jpeg_create_decompress(&info);
     jpeg_mem_src(&info, src, len);
     jpeg_read_header(&info, TRUE);
@@ -90,14 +97,42 @@ JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
     alpha = false;
 }
 
+void JPEGImageReader::errorHandler(j_common_ptr cinfo) {
+    // libjpeg recommends doing this memory alignment trickery.
+    JPEGErrorManager* error = (JPEGErrorManager*)cinfo->err;
+
+    /* Return control to the setjmp point */
+    longjmp(error->jump, 1);
+}
+
+void JPEGImageReader::errorMessage(j_common_ptr cinfo) {
+    // libjpeg recommends doing this memory alignment trickery.
+    JPEGErrorManager* error = (JPEGErrorManager*)cinfo->err;
+
+    char buffer[JMSG_LENGTH_MAX];
+    (*cinfo->err->format_message) (cinfo, buffer);
+    error->reader->message = buffer;
+}
+
 unsigned char* JPEGImageReader::decode() {
     if (info.data_precision != 8) return NULL;
     if (info.num_components != 3 && info.num_components != 1) return NULL;
 
+
+
     size_t length = width * height * 4;
     size_t offset = 0;
     unsigned char* surface = (unsigned char*)malloc(length);
-    assert(surface);
+    if (surface == NULL) {
+        message = "Insufficient memory";
+        return NULL;
+    }
+
+    if (setjmp(err.jump)) {
+        free(surface);
+        jpeg_destroy_decompress(&info);
+        return NULL;
+    }
 
     jpeg_start_decompress(&info);
 

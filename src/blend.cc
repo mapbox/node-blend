@@ -14,6 +14,7 @@ struct BlendBaton {
     ImageBuffers buffers;
 
     bool error;
+    std::string message;
 
     unsigned char* result;
     size_t length;
@@ -219,6 +220,13 @@ int EIO_Blend(eio_req *req) {
         // Skip invalid images.
         if (layer == NULL) continue;
 
+        if (layer->width == 0 || layer->height == 0) {
+            baton->error = true;
+            baton->message = layer->message;
+            delete layer;
+            break;
+        }
+
         if (size == 0) {
             width = layer->width;
             height = layer->height;
@@ -273,9 +281,12 @@ int EIO_AfterBlend(eio_req *req) {
         };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 2, argv);
     } else {
-        Local<Value> argv[] = {
-            Local<Value>::New(Exception::TypeError(String::New("Unspecified error")))
-        };
+        Local<Value> argv[1];
+        if (baton->message.length()) {
+            argv[0] = Local<Value>::New(Exception::Error(String::New(baton->message.c_str())));
+        } else {
+            argv[0] = Local<Value>::New(Exception::Error(String::New("Unspecified error")));
+        }
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 1, argv);
     }
 

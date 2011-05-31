@@ -6,6 +6,8 @@
 #include <zlib.h>
 #include <assert.h>
 
+#include <string>
+
 class ImageReader {
 public:
     inline unsigned long getWidth() { return width; }
@@ -19,6 +21,8 @@ public:
     unsigned long width;
     unsigned long height;
     bool alpha;
+
+    std::string message;
 protected:
     unsigned char* source;
     size_t length;
@@ -47,10 +51,18 @@ public:
     unsigned char* decode();
 
 protected:
+    struct JPEGErrorManager {
+        jpeg_error_mgr pub;
+        jmp_buf jump;
+        JPEGImageReader* reader;
+    };
+
+    static void errorHandler(j_common_ptr cinfo);
+    static void errorMessage(j_common_ptr cinfo);
 
 protected:
     jpeg_decompress_struct info;
-	jpeg_error_mgr err;
+	JPEGErrorManager err;
 };
 
 #endif
