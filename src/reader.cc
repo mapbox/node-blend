@@ -89,7 +89,7 @@ JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
     height = info.image_height;
     alpha = false;
     assert(info.data_precision == 8);
-    assert(info.num_components == 3);
+    assert(info.num_components == 3 || info.num_components == 1);
 }
 
 unsigned char* JPEGImageReader::decode() {
@@ -99,22 +99,39 @@ unsigned char* JPEGImageReader::decode() {
     assert(surface);
 
     jpeg_start_decompress(&info);
-    while (info.output_scanline < info.output_height) {
-        assert(offset < length);
-        unsigned char* destination = surface + offset;
-        jpeg_read_scanlines(&info, &destination, width * 3);
 
-        // Convert from RGB to RGBA
-        unsigned int* dest = (unsigned int*)destination;
-        for (int i = width - 1, pos = i * 3; i >= 0; pos = --i * 3) {
-            // Read 3 bytes and write it to 4 bytes.
-            dest[i] = 0xFF << 24 |
-                      destination[pos] |
-                      destination[pos + 1] << 8 |
-                      destination[pos + 2] << 16;
+    if (info.num_components == 1) {
+        // Decompress monochrome image.
+        while (info.output_scanline < info.output_height) {
+            assert(offset < length);
+            unsigned char* destination = surface + offset;
+            jpeg_read_scanlines(&info, &destination, width);
+
+            // Convert from Monochrome to RGBA
+            unsigned int* dest = (unsigned int*)destination;
+            for (int i = width - 1; i >= 0; i--) {
+                dest[i] = 0xFF << 24 | destination[i] |
+                    destination[i] << 8 | destination[i] << 16;
+            }
+
+            offset += width * 4;
         }
+    } else {
+        // RGB image.
+        while (info.output_scanline < info.output_height) {
+            assert(offset < length);
+            unsigned char* destination = surface + offset;
+            jpeg_read_scanlines(&info, &destination, width * 3);
 
-        offset += width * 4;
+            // Convert from RGB to RGBA
+            unsigned int* dest = (unsigned int*)destination;
+            for (int i = width - 1, pos = i * 3; i >= 0; pos = --i * 3) {
+                dest[i] = 0xFF << 24 | destination[pos] |
+                    destination[pos + 1] << 8 | destination[pos + 2] << 16;
+            }
+
+            offset += width * 4;
+        }
     }
 
     jpeg_finish_decompress(&info);
