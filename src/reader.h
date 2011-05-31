@@ -7,6 +7,9 @@
 #include <zlib.h>
 #include <assert.h>
 
+#include <cstdlib>
+#include <cstring>
+
 #include <string>
 
 class ImageReader {
