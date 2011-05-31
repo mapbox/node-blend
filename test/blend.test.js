@@ -68,7 +68,7 @@ exports['test blend function with semi-bogus buffer'] = function(beforeExit) {
     blend([ buffer, images[1] ], function(err, data) {
         completed = true;
         assert.ok(err);
-        assert.equal(err.message, 'Error: [00][00][00][00]: invalid chunk type');
+        assert.equal(err.message, '[00][00][00][00]: invalid chunk type');
     });
 
     beforeExit(function() { assert.ok(completed); });
