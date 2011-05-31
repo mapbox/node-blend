@@ -10,28 +10,28 @@ public:
     inline unsigned long getWidth() { return width; }
     inline unsigned long getheight() { return height; }
     inline bool getAlpha() { return alpha; }
-    virtual void decode(unsigned char* surface, bool alpha = true) = 0;
-    ImageReader() : width(0), height(0), depth(0), color(-1), alpha(false),
-                    source(NULL), length(0), pos(0) {}
+    virtual unsigned char* decode() = 0;
+    ImageReader(const unsigned char* src, size_t len) : width(0), height(0),
+        depth(0), color(-1), alpha(false), source(src), length(len), pos(0) {}
     virtual ~ImageReader();
-    static ImageReader* create(const char* surface, size_t len);
+    static ImageReader* create(const unsigned char* surface, size_t len);
 
-    png_uint_32 width;
-    png_uint_32 height;
+    unsigned long width;
+    unsigned long height;
     int depth;
     int color;
     bool alpha;
 protected:
-    const char* source;
+    const unsigned char* source;
     size_t length;
     size_t pos;
 };
 
 class PNGImageReader : public ImageReader {
 public:
-    PNGImageReader(const char* src, size_t len);
+    PNGImageReader(const unsigned char* src, size_t len);
     virtual ~PNGImageReader();
-    void decode(unsigned char* surface, bool alpha);
+    unsigned char* decode();
 
 protected:
     static void readCallback(png_structp png, png_bytep data, png_size_t length);
@@ -39,6 +39,18 @@ protected:
 protected:
     png_structp png;
     png_infop info;
+};
+
+
+class JPEGImageReader : public ImageReader {
+public:
+    JPEGImageReader(const unsigned char* src, size_t len);
+    virtual ~JPEGImageReader();
+    unsigned char* decode();
+
+protected:
+
+protected:
 };
 
 #endif

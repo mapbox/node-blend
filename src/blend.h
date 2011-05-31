@@ -11,7 +11,7 @@
 #include <string>
 #include <queue>
 
-typedef std::pair<char*, size_t> ImageBuffer;
+typedef std::pair<unsigned char*, size_t> ImageBuffer;
 typedef std::vector<ImageBuffer> ImageBuffers;
 typedef v8::Persistent<v8::Object> PersistentObject;
 

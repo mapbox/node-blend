@@ -15,7 +15,7 @@ struct BlendBaton {
 
     bool error;
 
-    char* result;
+    unsigned char* result;
     size_t length;
     size_t max;
 
@@ -26,10 +26,10 @@ struct BlendBaton {
     }
     void add(Handle<Object> buffer) {
         size_t length = Buffer::Length(buffer);
-        char* image = (char*)malloc(length);
+        unsigned char* image = (unsigned char*)malloc(length);
         assert(image);
         memcpy(image, Buffer::Data(buffer), length);
-        buffers.push_back(std::make_pair<char*, size_t>(image, length));
+        buffers.push_back(std::make_pair<unsigned char*, size_t>(image, length));
     }
     ~BlendBaton() {
         ev_unref(EV_DEFAULT_UC);
@@ -113,7 +113,7 @@ void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {
 
     if (baton->result == NULL || baton->max < baton->length + length) {
         int increase = baton->length ? 4 * length : 32768;
-        baton->result = (char*)realloc(baton->result, baton->max + increase);
+        baton->result = (unsigned char*)realloc(baton->result, baton->max + increase);
         baton->max += increase;
     }
 
@@ -234,10 +234,7 @@ int EIO_Blend(eio_req *req) {
             break;
         }
 
-        images[size] = (unsigned int*)malloc(width * height * 4);
-        // TODO: handle gracefully
-        assert(images[size]);
-        layer->decode((unsigned char*)images[size], true);
+        images[size] = (unsigned int*)layer->decode();
         size++;
 
         if (!layer->alpha) {
@@ -272,7 +269,7 @@ int EIO_AfterBlend(eio_req *req) {
     if (!baton->error && baton->result) {
         Local<Value> argv[] = {
             Local<Value>::New(Null()),
-            Local<Value>::New(Buffer::New(baton->result, baton->length)->handle_)
+            Local<Value>::New(Buffer::New((char*)baton->result, baton->length)->handle_)
         };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 2, argv);
     } else {

@@ -1,19 +1,7 @@
 #include "reader.h"
 
-ImageReader* ImageReader::create(const char* surface, size_t len) {
-    if (png_sig_cmp((png_bytep)surface, 0, 8) == 0) {
-        return new PNGImageReader(surface, len);
-    }
-
-    return NULL;
-}
-
-ImageReader::~ImageReader() {}
-
-PNGImageReader::PNGImageReader(const char* src, size_t len) : ImageReader() {
-    source = src;
-    length = len;
-
+PNGImageReader::PNGImageReader(const unsigned char* src, size_t len) :
+        ImageReader(src, len) {
     // Decode PNG header.
     png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     assert(png);
@@ -23,12 +11,6 @@ PNGImageReader::PNGImageReader(const char* src, size_t len) : ImageReader() {
     png_read_info(png, info);
     png_get_IHDR(png, info, &width, &height, &depth, &color, NULL, NULL, NULL);
     alpha = (color & PNG_COLOR_MASK_ALPHA) || png_get_valid(png, info, PNG_INFO_tRNS);
-}
-
-PNGImageReader::~PNGImageReader() {
-    png_destroy_read_struct(&png, &info, NULL);
-    png = NULL;
-    info = NULL;
 }
 
 void PNGImageReader::readCallback(png_structp png, png_bytep data, png_size_t length) {
@@ -45,7 +27,7 @@ void PNGImageReader::readCallback(png_structp png, png_bytep data, png_size_t le
 }
 
 
-void PNGImageReader::decode(unsigned char* surface, bool alpha) {
+unsigned char* PNGImageReader::decode() {
     // From http://trac.mapnik.org/browser/trunk/src/png_reader.cpp
     if (color == PNG_COLOR_TYPE_PALETTE)
         png_set_expand(png);
@@ -61,11 +43,9 @@ void PNGImageReader::decode(unsigned char* surface, bool alpha) {
         color == PNG_COLOR_TYPE_GRAY_ALPHA)
         png_set_gray_to_rgb(png);
 
-    // Add or strip alpha channel.
-    if (alpha && !this->alpha) {
+    // Always add an alpha channel.
+    if (!this->alpha) {
         png_set_add_alpha(png, 0xFF, PNG_FILLER_AFTER);
-    } else if (this->alpha && !alpha) {
-        png_set_strip_alpha(png);
     }
 
     double gamma;
@@ -77,6 +57,9 @@ void PNGImageReader::decode(unsigned char* surface, bool alpha) {
     unsigned int rowbytes = png_get_rowbytes(png, info);
     assert(width * 4 == rowbytes);
 
+    unsigned char* surface = (unsigned char*)malloc(width * height * 4);
+    assert(surface);
+
     png_bytep row_pointers[height];
     for (unsigned i = 0; i < height; i++) {
         row_pointers[i] = (unsigned char*)(surface + (i * rowbytes));
@@ -86,4 +69,49 @@ void PNGImageReader::decode(unsigned char* surface, bool alpha) {
     png_read_image(png, row_pointers);
 
     png_read_end(png, NULL);
+
+    return surface;
 }
+
+PNGImageReader::~PNGImageReader() {
+    png_destroy_read_struct(&png, &info, NULL);
+    png = NULL;
+    info = NULL;
+}
+
+
+
+JPEGImageReader::JPEGImageReader(const unsigned char* src, size_t len) :
+        ImageReader(src, len) {
+    //  Allocate and initialize a JPEG decompression object
+    //  Specify the source of the compressed data (eg, a file)
+    //  Call jpeg_read_header() to obtain image info
+}
+
+unsigned char* JPEGImageReader::decode() {
+    //  Set parameters for decompression
+    //  jpeg_start_decompress(...);
+    //  while (scan lines remain to be read)
+    //      jpeg_read_scanlines(...);
+    //  jpeg_finish_decompress(...);
+    //  Release the JPEG decompression object
+}
+
+JPEGImageReader::~JPEGImageReader() {
+
+}
+
+
+
+
+ImageReader* ImageReader::create(const unsigned char* src, size_t len) {
+    if (png_sig_cmp((png_bytep)src, 0, 8) == 0) {
+        return new PNGImageReader(src, len);
+    } else if (src[0] == '\xFF' && src[1] == '\xD8') {
+        return new JPEGImageReader(src, len);
+    }
+
+    return NULL;
+}
+
+ImageReader::~ImageReader() {}

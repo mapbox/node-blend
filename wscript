@@ -12,6 +12,7 @@ def configure(conf):
   conf.check_tool("compiler_cxx")
   conf.check_tool("node_addon")
   conf.check(lib='png', libpath=['/usr/local/lib', '/usr/X11/lib', '/opt/local/lib'], mandatory=True)
+  conf.check(lib='jpeg', libpath=['/usr/local/lib', '/usr/X11/lib', '/opt/local/lib'], mandatory=True)
 
 def build(bld):
   obj = bld.new_task_gen("cxx", "shlib", "node_addon")
@@ -19,7 +20,7 @@ def build(bld):
   obj.cxxflags.append('-I/usr/X11/include')
   obj.target = TARGET
   obj.source = ["src/reader.cc", "src/blend.cc"]
-  obj.uselib = "PNG"
+  obj.uselib = ["PNG","JPEG"]
 
 def shutdown():
   if Options.commands['clean']:
