@@ -88,11 +88,12 @@ JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
     width = info.image_width;
     height = info.image_height;
     alpha = false;
-    assert(info.data_precision == 8);
-    assert(info.num_components == 3 || info.num_components == 1);
 }
 
 unsigned char* JPEGImageReader::decode() {
+    if (info.data_precision != 8) return NULL;
+    if (info.num_components != 3 && info.num_components != 1) return NULL;
+
     size_t length = width * height * 4;
     size_t offset = 0;
     unsigned char* surface = (unsigned char*)malloc(length);
