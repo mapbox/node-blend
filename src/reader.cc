@@ -87,6 +87,8 @@ JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
     if (setjmp(err.jump)) {
         width = 0;
         height = 0;
+
+        // Error message was set by JPEGImageReader::errorMessage.
         return;
     }
     jpeg_create_decompress(&info);
@@ -129,8 +131,12 @@ unsigned char* JPEGImageReader::decode() {
     if (setjmp(err.jump)) {
         free(surface);
         jpeg_destroy_decompress(&info);
+
+        // Error message was set by JPEGImageReader::errorMessage.
         return NULL;
     }
+
+    info.out_color_space = JCS_RGB;
 
     jpeg_start_decompress(&info);
 
@@ -140,17 +146,9 @@ unsigned char* JPEGImageReader::decode() {
         unsigned int* image = (unsigned int*)destination;
         jpeg_read_scanlines(&info, &destination, 1);
 
-        if (info.num_components == 1) {
-            // Convert from Monochrome to RGBA
-            for (int i = width - 1; i >= 0; i--) {
-                image[i] = 0xFF << 24 | destination[i] << 16 |
-                    destination[i] << 8 | destination[i];
-            }
-        } else {
-            for (int i = width - 1, j = i * 3; i >= 0; j = --i * 3) {
-                image[i] = 0xFF << 24 | destination[j + 2] << 16 |
-                    destination[j + 1] << 8 | destination[j];
-            }
+        for (int i = width - 1, j = i * 3; i >= 0; j = --i * 3) {
+            image[i] = 0xFF << 24 | destination[j + 2] << 16 |
+                destination[j + 1] << 8 | destination[j];
         }
 
         offset += width * 4;

@@ -238,6 +238,7 @@ int EIO_Blend(eio_req *req) {
             }
         } else if (layer->width != width || layer->height != height) {
             baton->error = true;
+            baton->message = "Image dimensions don't match";
             delete layer;
             break;
         }
@@ -289,12 +290,9 @@ int EIO_AfterBlend(eio_req *req) {
         };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 2, argv);
     } else {
-        Local<Value> argv[1];
-        if (baton->message.length()) {
-            argv[0] = Local<Value>::New(Exception::Error(String::New(baton->message.c_str())));
-        } else {
-            argv[0] = Local<Value>::New(Exception::Error(String::New("Unspecified error")));
-        }
+        Local<Value> argv[] = {
+            Local<Value>::New(Exception::Error(String::New(baton->message.c_str())))
+        };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 1, argv);
     }
 
