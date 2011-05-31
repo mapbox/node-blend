@@ -101,38 +101,26 @@ unsigned char* JPEGImageReader::decode() {
 
     jpeg_start_decompress(&info);
 
-    if (info.num_components == 1) {
-        // Decompress monochrome image.
-        while (info.output_scanline < info.output_height) {
-            assert(offset < length);
-            unsigned char* destination = surface + offset;
-            jpeg_read_scanlines(&info, &destination, width);
+    while (info.output_scanline < info.output_height) {
+        assert(offset < length);
+        unsigned char* destination = surface + offset;
+        unsigned int* image = (unsigned int*)destination;
+        jpeg_read_scanlines(&info, &destination, 1);
 
+        if (info.num_components == 1) {
             // Convert from Monochrome to RGBA
-            unsigned int* dest = (unsigned int*)destination;
             for (int i = width - 1; i >= 0; i--) {
-                dest[i] = 0xFF << 24 | destination[i] |
-                    destination[i] << 8 | destination[i] << 16;
+                image[i] = 0xFF << 24 | destination[i] << 16 |
+                    destination[i] << 8 | destination[i];
             }
-
-            offset += width * 4;
-        }
-    } else {
-        // RGB image.
-        while (info.output_scanline < info.output_height) {
-            assert(offset < length);
-            unsigned char* destination = surface + offset;
-            jpeg_read_scanlines(&info, &destination, width * 3);
-
-            // Convert from RGB to RGBA
-            unsigned int* dest = (unsigned int*)destination;
-            for (int i = width - 1, pos = i * 3; i >= 0; pos = --i * 3) {
-                dest[i] = 0xFF << 24 | destination[pos] |
-                    destination[pos + 1] << 8 | destination[pos + 2] << 16;
+        } else {
+            for (int i = width - 1, j = i * 3; i >= 0; j = --i * 3) {
+                image[i] = 0xFF << 24 | destination[j + 2] << 16 |
+                    destination[j + 1] << 8 | destination[j];
             }
-
-            offset += width * 4;
         }
+
+        offset += width * 4;
     }
 
     jpeg_finish_decompress(&info);
@@ -148,7 +136,7 @@ ImageReader* ImageReader::create(unsigned char* src, size_t len) {
         return new PNGImageReader(src, len);
     } else if (src[0] == 255 && src[1] == 216) {
         return new JPEGImageReader(src, len);
+    } else {
+        return NULL;
     }
-
-    return NULL;
 }
