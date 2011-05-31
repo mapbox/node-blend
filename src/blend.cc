@@ -309,11 +309,9 @@ extern "C" void init (Handle<Object> target) {
         static_cast<PropertyAttribute>(ReadOnly | DontDelete)
     );
 
-    char libjpeg[] = "X.X";
-    snprintf(libjpeg, 4, "%d.%d", JPEG_LIB_VERSION_MAJOR, JPEG_LIB_VERSION_MINOR);
     target->Set(
         String::NewSymbol("libjpeg"),
-        String::NewSymbol(libjpeg),
+        Integer::New(JPEG_LIB_VERSION),
         static_cast<PropertyAttribute>(ReadOnly | DontDelete)
     );
 }
