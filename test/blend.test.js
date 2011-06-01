@@ -103,3 +103,15 @@ exports['test blend function'] = function(beforeExit) {
 
     beforeExit(function() { assert.ok(completed); });
 };
+
+exports['test blend function 2'] = function(beforeExit) {
+    var completed = false;
+
+    blend([ images[2], images[3] ], function(err, data) {
+        completed = true;
+        if (err) throw err;
+        assert.equal('7de8dfb6acf5fb3664b9b3f77d747e4a', md5(data));
+    });
+
+    beforeExit(function() { assert.ok(completed); });
+};
