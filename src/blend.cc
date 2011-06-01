@@ -45,7 +45,8 @@ Handle<Value> Blend(const Arguments& args) {
     if (!options.IsEmpty()) {
         Local<Value> format_val = options->Get(String::NewSymbol("format"));
         if (!format_val.IsEmpty() && format_val->BooleanValue()) {
-            if (strcmp(*String::AsciiValue(format_val), "jpeg") == 0) {
+            if (strcmp(*String::AsciiValue(format_val), "jpeg") == 0 ||
+                strcmp(*String::AsciiValue(format_val), "jpg") == 0) {
                 format = BLEND_FORMAT_JPEG;
                 Local<Value> quality_val = options->Get(String::NewSymbol("quality"));
                 if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
