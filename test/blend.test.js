@@ -20,29 +20,32 @@ var images = [
 
 exports['test first argument bogus'] = function(beforeExit) {
     var completed = false;
-    blend(true, function(err) {
-        completed = true;
-        assert.ok(err && /First argument must be an array of Buffers/.test(err.message));
-    });
-    beforeExit(function() { assert.ok(completed); });
+
+    assert.throws(function() {
+        blend(true, function(err) { completed = true; });
+    }, /First argument must be an array of Buffers/);
+
+    beforeExit(function() { assert.ok(!completed); });
 };
 
 exports['test first argument empty'] = function(beforeExit) {
     var completed = false;
-    blend([], function(err) {
-        completed = true;
-        assert.ok(err && /First argument must contain at least one Buffer/.test(err.message));
-    });
-    beforeExit(function() { assert.ok(completed); });
+
+    assert.throws(function() {
+        blend([], function(err) { completed = true; });
+    }, /First argument must contain at least one Buffer/);
+
+    beforeExit(function() { assert.ok(!completed); });
 };
 
 exports['test bogus elements in array'] = function(beforeExit) {
     var completed = false;
-    blend([1,2,3], function(err) {
-        completed = true;
-        assert.ok(err && /All elements must be Buffers/.test(err.message));
-    });
-    beforeExit(function() { assert.ok(completed); });
+
+    assert.throws(function() {
+        blend([1,2,3], function(err) { completed = true; });
+    }, /All elements must be Buffers/);
+
+    beforeExit(function() { assert.ok(!completed); });
 };
 
 exports['test blend function with topmost image having no alpha'] = function(beforeExit) {

@@ -16,12 +16,14 @@ struct BlendBaton {
     bool error;
     std::string message;
 
+    BlendFormat format;
+
     unsigned char* result;
     size_t length;
     size_t max;
 
     BlendBaton(Handle<Function> cb)
-        : error(false), result(NULL), length(0), max(0) {
+        : error(false), format(BLEND_FORMAT_PNG), result(NULL), length(0), max(0) {
         ev_ref(EV_DEFAULT_UC);
         callback = Persistent<Function>::New(cb);
     }
@@ -54,36 +56,46 @@ struct BlendBaton {
     }
 };
 
-Handle<Value> ThrowOrCall(Handle<Function> callback, const char* message) {
-    if (callback.IsEmpty()) {
-        return ThrowException(Exception::TypeError(String::New(message)));
-    } else {
-        Local<Value> argv[] = { Exception::TypeError(String::New(message)) };
-        TRY_CATCH_CALL(Context::GetCurrent()->Global(), callback, 1, argv)
-        return Undefined();
-    }
-}
-
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
 
-    if (args.Length() < 2 || !args[1]->IsFunction()) {
-        return ThrowException(Exception::TypeError(String::New("Second argument must be a function")));
-    }
-    Local<Function> callback = Local<Function>::Cast(args[1]);
+    Local<Function> callback;
+    Local<Object> options;
 
-    if (args.Length() < 1 || !args[0]->IsArray()) {
-        return ThrowOrCall(callback, "First argument must be an array of Buffers.");
+    if (args.Length() == 0 || !args[0]->IsArray()) {
+        return TYPE_EXCEPTION("First argument must be an array of Buffers.");
+    } else if (args.Length() == 1) {
+        return TYPE_EXCEPTION("Second argument must be a function");
+    } else if (args.Length() == 2) {
+        // No options provided.
+        if (!args[1]->IsFunction()) {
+            return TYPE_EXCEPTION("Second argument must be a function.");
+        }
+        callback = Local<Function>::Cast(args[1]);
+    } else if (args.Length() >= 3) {
+        if (!args[1]->IsObject()) {
+            return TYPE_EXCEPTION("Second argument must be a an options object.");
+        }
+        options = Local<Object>::Cast(args[1]);
+
+        if (!args[2]->IsFunction()) {
+            return TYPE_EXCEPTION("Third argument must be a function");
+        }
+        callback = Local<Function>::Cast(args[2]);
     }
+
+    // Validate options
+    if (!options.IsEmpty()) {
+        Local<Value> format = options->Get(String::NewSymbol("format"));
+    }
+
     Local<Array> buffers = Local<Array>::Cast(args[0]);
-
     uint32_t length = buffers->Length();
-
     if (length < 1) {
-        return ThrowOrCall(callback, "First argument must contain at least one Buffer.");
+        return TYPE_EXCEPTION("First argument must contain at least one Buffer.");
     } else if (length == 1) {
         if (!Buffer::HasInstance(buffers->Get(0))) {
-            return ThrowOrCall(callback, "All elements must be Buffers.");
+            return TYPE_EXCEPTION("All elements must be Buffers.");
         } else {
             // Directly pass through buffer if it's the only one.
             Local<Value> argv[] = {
@@ -97,7 +109,7 @@ Handle<Value> Blend(const Arguments& args) {
         for (uint32_t i = 0; i < length; i++) {
             if (!Buffer::HasInstance(buffers->Get(i))) {
                 delete baton;
-                return ThrowOrCall(callback, "All elements must be Buffers.");
+                return TYPE_EXCEPTION("All elements must be Buffers.");
             } else {
                 baton->add(buffers->Get(i)->ToObject());
             }
