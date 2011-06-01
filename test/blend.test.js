@@ -1,7 +1,12 @@
 var assert = require('assert');
 var Buffer = require('buffer').Buffer;
+var crypto = require('crypto');
 var fs = require('fs');
 var blend = require('..');
+
+function md5(buffer) {
+    return crypto.createHash('md5').update(buffer).digest('hex');
+}
 
 if (process.setMaxListeners) process.setMaxListeners(0);
 
@@ -93,6 +98,7 @@ exports['test blend function'] = function(beforeExit) {
         completed = true;
         if (err) throw err;
         assert.notDeepEqual(images[4], data);
+        assert.equal('e75c154209ecf1201536fe402044d9a0', md5(data));
     });
 
     beforeExit(function() { assert.ok(completed); });
