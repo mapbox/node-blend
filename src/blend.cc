@@ -9,53 +9,6 @@
 using namespace v8;
 using namespace node;
 
-struct BlendBaton {
-    Persistent<Function> callback;
-    ImageBuffers buffers;
-
-    bool error;
-    std::string message;
-
-    BlendFormat format;
-
-    unsigned char* result;
-    size_t length;
-    size_t max;
-
-    BlendBaton(Handle<Function> cb)
-        : error(false), format(BLEND_FORMAT_PNG), result(NULL), length(0), max(0) {
-        ev_ref(EV_DEFAULT_UC);
-        callback = Persistent<Function>::New(cb);
-    }
-    void add(Handle<Object> buffer) {
-        size_t length = Buffer::Length(buffer);
-        unsigned char* image = (unsigned char*)malloc(length);
-        assert(image);
-        memcpy(image, Buffer::Data(buffer), length);
-        buffers.push_back(std::make_pair<unsigned char*, size_t>(image, length));
-    }
-    ~BlendBaton() {
-        ev_unref(EV_DEFAULT_UC);
-
-        ImageBuffers::iterator cur = buffers.begin();
-        ImageBuffers::iterator end = buffers.end();
-        for (; cur < end; cur++) {
-            if ((*cur).first == result) {
-                result = NULL;
-            }
-            free((*cur).first);
-            (*cur).first = NULL;
-        }
-        buffers.clear();
-
-        if (result) {
-            free(result);
-        }
-
-        callback.Dispose();
-    }
-};
-
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
 
@@ -79,14 +32,32 @@ Handle<Value> Blend(const Arguments& args) {
         options = Local<Object>::Cast(args[1]);
 
         if (!args[2]->IsFunction()) {
-            return TYPE_EXCEPTION("Third argument must be a function");
+            return TYPE_EXCEPTION("Third argument must be a function.");
         }
         callback = Local<Function>::Cast(args[2]);
     }
 
+
+    BlendFormat format = BLEND_FORMAT_PNG;
+    int quality = 80;
+
     // Validate options
     if (!options.IsEmpty()) {
-        Local<Value> format = options->Get(String::NewSymbol("format"));
+        Local<Value> format_val = options->Get(String::NewSymbol("format"));
+        if (!format_val.IsEmpty() && format_val->BooleanValue()) {
+            if (strcmp(*String::AsciiValue(format_val), "jpeg") == 0) {
+                format = BLEND_FORMAT_JPEG;
+                Local<Value> quality_val = options->Get(String::NewSymbol("quality"));
+                if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
+                    quality = quality_val->Int32Value();
+                    if (quality < 0 || quality > 100) {
+                        return TYPE_EXCEPTION("JPEG quality is range 0-100.");
+                    }
+                }
+            } else if (strcmp(*String::AsciiValue(format_val), "png") != 0) {
+                return TYPE_EXCEPTION("Invalid output format.");
+            }
+        }
     }
 
     Local<Array> buffers = Local<Array>::Cast(args[0]);
@@ -105,7 +76,7 @@ Handle<Value> Blend(const Arguments& args) {
             TRY_CATCH_CALL(Context::GetCurrent()->Global(), callback, 2, argv);
         }
     } else {
-        BlendBaton* baton = new BlendBaton(callback);
+        BlendBaton* baton = new BlendBaton(callback, format, quality);
         for (uint32_t i = 0; i < length; i++) {
             if (!Buffer::HasInstance(buffers->Get(i))) {
                 delete baton;
@@ -137,8 +108,7 @@ void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {
     baton->length += length;
 }
 
-
-void Blend_Encode(unsigned const char* source, BlendBaton* baton,
+void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
         unsigned long width, unsigned long height, bool alpha) {
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
@@ -161,6 +131,58 @@ void Blend_Encode(unsigned const char* source, BlendBaton* baton,
     png_set_write_fn(png_ptr, (png_voidp)baton, Blend_WritePNG, NULL);
     png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_STRIP_FILLER_AFTER, NULL);
     png_destroy_write_struct(&png_ptr, &info_ptr);
+}
+
+void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
+        unsigned long width, unsigned long height, bool alpha) {
+    struct jpeg_compress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_compress(&cinfo);
+
+    unsigned char* result = NULL;
+    unsigned long length = 0;
+    jpeg_mem_dest(&cinfo, &result, &length);
+
+    cinfo.image_width = width;
+    cinfo.image_height = height;
+    cinfo.input_components = 3;
+    cinfo.in_color_space = JCS_RGB;
+    jpeg_set_defaults(&cinfo);
+    jpeg_set_quality(&cinfo, baton->quality, TRUE);
+
+    jpeg_start_compress(&cinfo, TRUE);
+
+    unsigned char* row = (unsigned char*)malloc(width * 3);
+    while (cinfo.next_scanline < cinfo.image_height) {
+        // Get rid of the alpha channel.
+        const unsigned char* scanline = source + cinfo.next_scanline * width * 4;
+        for (int i = 0, j = 0, end = width * 3; i < end; j++) {
+            row[i++] = scanline[j++];
+            row[i++] = scanline[j++];
+            row[i++] = scanline[j++];
+        }
+
+        jpeg_write_scanlines(&cinfo, &row, 1);
+    }
+
+    free(row);
+
+    jpeg_finish_compress(&cinfo);
+    jpeg_destroy_compress(&cinfo);
+
+    baton->result = result;
+    baton->length = length;
+}
+
+void Blend_Encode(unsigned const char* source, BlendBaton* baton,
+        unsigned long width, unsigned long height, bool alpha) {
+    if (baton->format == BLEND_FORMAT_JPEG) {
+        Blend_EncodeJPEG(source, baton, width, height, alpha);
+    } else {
+        Blend_EncodePNG(source, baton, width, height, alpha);
+    }
 }
 
 inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned long width, unsigned long height) {
