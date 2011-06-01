@@ -19,6 +19,7 @@ public:
         alpha(false), source(src), length(len), pos(0) {}
     ImageReader(const char* msg) : width(0), height(0), alpha(false),
         message(msg), source(NULL), length(0), pos(0) {}
+    virtual ~ImageReader() {};
     static ImageReader* create(unsigned char* surface, size_t len);
 
     unsigned long width;
@@ -35,6 +36,7 @@ protected:
 class PNGImageReader : public ImageReader {
 public:
     PNGImageReader(unsigned char* src, size_t len);
+    virtual ~PNGImageReader();
     unsigned char* decode();
 
 protected:
@@ -53,6 +55,7 @@ protected:
 class JPEGImageReader : public ImageReader {
 public:
     JPEGImageReader(unsigned char* src, size_t len);
+    virtual ~JPEGImageReader();
     unsigned char* decode();
 
 protected:

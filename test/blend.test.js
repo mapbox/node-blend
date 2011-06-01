@@ -92,7 +92,7 @@ exports['test blend function'] = function(beforeExit) {
     blend(images, function(err, data) {
         completed = true;
         if (err) throw err;
-        // assert.notDeepEqual(images[4], data);
+        assert.notDeepEqual(images[4], data);
     });
 
     beforeExit(function() { assert.ok(completed); });

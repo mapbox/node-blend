@@ -9,7 +9,6 @@ PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
     assert(info);
 
     if (setjmp(png_jmpbuf(png))) {
-        png_destroy_read_struct(&png, &info, NULL);
         width = 0;
         height = 0;
         return;
@@ -46,6 +45,13 @@ void PNGImageReader::errorHandler(png_structp png, png_const_charp error_msg) {
 }
 
 unsigned char* PNGImageReader::decode() {
+    if (setjmp(png_jmpbuf(png))) {
+        png_destroy_read_struct(&png, &info, NULL);
+        width = 0;
+        height = 0;
+        return NULL;
+    }
+
     // From http://trac.mapnik.org/browser/trunk/src/png_reader.cpp
     if (color == PNG_COLOR_TYPE_PALETTE)
         png_set_expand(png);
@@ -88,11 +94,13 @@ unsigned char* PNGImageReader::decode() {
 
     png_read_end(png, NULL);
 
+    return surface;
+}
+
+PNGImageReader::~PNGImageReader() {
     png_destroy_read_struct(&png, &info, NULL);
     png = NULL;
     info = NULL;
-
-    return surface;
 }
 
 JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
@@ -143,12 +151,12 @@ unsigned char* JPEGImageReader::decode() {
     unsigned char* surface = (unsigned char*)malloc(length);
     if (surface == NULL) {
         message = "Insufficient memory";
+        jpeg_destroy_decompress(&info);
         return NULL;
     }
 
     if (setjmp(err.jump)) {
         free(surface);
-        jpeg_destroy_decompress(&info);
 
         // Error message was set by JPEGImageReader::errorMessage.
         return NULL;
@@ -173,10 +181,15 @@ unsigned char* JPEGImageReader::decode() {
     }
 
     jpeg_finish_decompress(&info);
-    jpeg_destroy_decompress(&info);
 
     return surface;
 }
+
+
+JPEGImageReader::~JPEGImageReader() {
+    jpeg_destroy_decompress(&info);
+}
+
 
 ImageReader* ImageReader::create(unsigned char* src, size_t len) {
     if (png_sig_cmp((png_bytep)src, 0, 8) == 0) {
