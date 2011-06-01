@@ -147,7 +147,6 @@ unsigned char* JPEGImageReader::decode() {
     if (info.num_components != 3 && info.num_components != 1) return NULL;
 
     size_t length = width * height * 4;
-    size_t offset = 0;
     unsigned char* surface = (unsigned char*)malloc(length);
     if (surface == NULL) {
         message = "Insufficient memory";
@@ -166,18 +165,23 @@ unsigned char* JPEGImageReader::decode() {
 
     jpeg_start_decompress(&info);
 
+    unsigned char* row_pointers[height];
+    for (unsigned i = 0; i < height; i++) {
+        row_pointers[i] = (unsigned char*)(surface + (i * width * 4));
+    }
+
+    size_t offset = 0;
     while (info.output_scanline < info.output_height) {
-        assert(offset < length);
-        unsigned char* destination = surface + offset;
+        offset += jpeg_read_scanlines(&info, row_pointers + offset, height - offset);
+    }
+
+    for (unsigned i = 0; i < height; i++) {
+        unsigned char* destination = surface + i * width * 4;
         unsigned int* image = (unsigned int*)destination;
-        jpeg_read_scanlines(&info, &destination, 1);
-
-        for (int i = width - 1, j = i * 3; i >= 0; j = --i * 3) {
-            image[i] = 0xFF << 24 | destination[j + 2] << 16 |
-                destination[j + 1] << 8 | destination[j];
+        for (int j = width - 1, k = j * 3; j >= 0; k = --j * 3) {
+            image[j] = 0xFF << 24 | destination[k + 2] << 16 |
+                destination[k + 1] << 8 | destination[k];
         }
-
-        offset += width * 4;
     }
 
     jpeg_finish_decompress(&info);
