@@ -16,7 +16,7 @@ blend([ image1, image2 ], {
     format: 'jpeg',
     quality: 90
 }, function(err, result) {
-    // result contains the blended result image compressed as PNG.
+    // result contains the blended result image compressed as JPEG.
 });
 ```
 
