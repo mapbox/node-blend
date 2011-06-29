@@ -22,8 +22,8 @@ public:
     virtual ~ImageReader() {};
     static ImageReader* create(unsigned char* surface, size_t len);
 
-    unsigned long width;
-    unsigned long height;
+    png_uint_32 width;
+    png_uint_32 height;
     bool alpha;
 
     std::string message;
