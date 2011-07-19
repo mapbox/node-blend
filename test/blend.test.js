@@ -4,10 +4,6 @@ var crypto = require('crypto');
 var fs = require('fs');
 var blend = require('..');
 
-function md5(buffer) {
-    return crypto.createHash('md5').update(buffer).digest('hex');
-}
-
 if (process.setMaxListeners) process.setMaxListeners(0);
 
 var images = [
@@ -112,7 +108,6 @@ exports['test blend function 2'] = function(beforeExit) {
     var completed = false;
 
     blend([ images[2], images[3] ], function(err, data) {
-        completed = true;
         if (err) throw err;
         assert.imageEqualsFile(data, 'test/fixture/results/2.png', function(err) {
             completed = true;

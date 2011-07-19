@@ -4,10 +4,6 @@ var crypto = require('crypto');
 var fs = require('fs');
 var blend = require('..');
 
-function md5(buffer) {
-    return crypto.createHash('md5').update(buffer).digest('hex');
-}
-
 if (process.setMaxListeners) process.setMaxListeners(0);
 
 exports['test blending bogus JPEG image'] = function(beforeExit) {
@@ -49,9 +45,11 @@ exports['test blending a jpeg image'] = function(beforeExit) {
         fs.readFileSync('test/fixture/1a.jpg'),
         fs.readFileSync('test/fixture/2.png')
     ], function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.equal('4e43abdd243ccafc80a7da9b0efe3086', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/3.png', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -64,9 +62,11 @@ exports['test blending a grayscale jpeg image'] = function(beforeExit) {
         fs.readFileSync('test/fixture/1b.jpg'),
         fs.readFileSync('test/fixture/2.png')
     ], function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.equal('6a11a65c397f9f3929791703dd61645f', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/4.png', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -80,9 +80,11 @@ exports['test blending a color jpeg image'] = function(beforeExit) {
         fs.readFileSync('test/fixture/1c.jpg'),
         fs.readFileSync('test/fixture/2.png')
     ], function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.equal('393a40fd34bfd58f4d5c5e658f6f00f1', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/5.png', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
