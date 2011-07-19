@@ -9,6 +9,7 @@ PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
     assert(info);
 
     if (setjmp(png_jmpbuf(png))) {
+        png_destroy_read_struct(&png, &info, NULL);
         width = 0;
         height = 0;
         return;
@@ -39,7 +40,7 @@ void PNGImageReader::errorHandler(png_structp png, png_const_charp error_msg) {
     reader->message = error_msg;
 
     if (png) {
-        longjmp(png->jmpbuf, 1);
+        longjmp(png_jmpbuf(png), 1);
     }
     exit(1);
 }
