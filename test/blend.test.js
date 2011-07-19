@@ -1,4 +1,4 @@
-var assert = require('assert');
+var assert = require('./support/assert');
 var Buffer = require('buffer').Buffer;
 var crypto = require('crypto');
 var fs = require('fs');
@@ -98,10 +98,11 @@ exports['test blend function'] = function(beforeExit) {
     var completed = false;
 
     blend(images, function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.notDeepEqual(images[4], data);
-        assert.equal('e75c154209ecf1201536fe402044d9a0', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/1.png', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -113,7 +114,10 @@ exports['test blend function 2'] = function(beforeExit) {
     blend([ images[2], images[3] ], function(err, data) {
         completed = true;
         if (err) throw err;
-        assert.equal('7de8dfb6acf5fb3664b9b3f77d747e4a', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/2.png', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });

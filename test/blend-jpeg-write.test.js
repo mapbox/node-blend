@@ -1,4 +1,4 @@
-var assert = require('assert');
+var assert = require('./support/assert');
 var Buffer = require('buffer').Buffer;
 var crypto = require('crypto');
 var fs = require('fs');
