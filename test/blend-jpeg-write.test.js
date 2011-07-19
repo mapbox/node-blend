@@ -4,10 +4,6 @@ var crypto = require('crypto');
 var fs = require('fs');
 var blend = require('..');
 
-function md5(buffer) {
-    return crypto.createHash('md5').update(buffer).digest('hex');
-}
-
 if (process.setMaxListeners) process.setMaxListeners(0);
 
 exports['test output with invalid format'] = function(beforeExit) {
@@ -72,9 +68,11 @@ exports['test output as jpeg'] = function(beforeExit) {
     ], {
         format: 'jpeg'
     }, function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.equal('8ca866bba9709dfc05729034cda85909', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/6.jpg', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -90,9 +88,11 @@ exports['test output as jpeg with different quality'] = function(beforeExit) {
         format: 'jpeg',
         quality: 50
     }, function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.equal('0923ce481b9788469cbf3e067253554a', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/7.jpg', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -107,9 +107,11 @@ exports['test output as png'] = function(beforeExit) {
     ], {
         format: 'png'
     }, function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.equal('393a40fd34bfd58f4d5c5e658f6f00f1', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/8.png', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
@@ -124,9 +126,11 @@ exports['test outputting with empty hash'] = function(beforeExit) {
     ], {
 
     }, function(err, data) {
-        completed = true;
         if (err) throw err;
-        assert.equal('393a40fd34bfd58f4d5c5e658f6f00f1', md5(data));
+        assert.imageEqualsFile(data, 'test/fixture/results/9.png', function(err) {
+            completed = true;
+            if (err) throw err;
+        });
     });
 
     beforeExit(function() { assert.ok(completed); });
