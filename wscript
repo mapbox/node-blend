@@ -16,7 +16,8 @@ def configure(conf):
 
 def build(bld):
   obj = bld.new_task_gen("cxx", "shlib", "node_addon")
-  obj.cxxflags = ["-O3", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-mfpmath=sse", "-march=core2"]
+  obj.cxxflags = ["-O3", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-mfpmath=sse", "-march=core2",
+        "-funroll-loops", "-fomit-frame-pointer"]
   obj.cxxflags.append('-I/usr/X11/include')
   obj.target = TARGET
   obj.source = ["src/reader.cc", "src/writer.cc", "src/blend.cc"]
