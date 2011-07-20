@@ -1,207 +1,5 @@
 #include "writer.h"
-#include "quantize.h"
-
-
-/**
- * Compute a palette for the given RGBA rasterBuffer using a median cut quantization.
- * - rb: the rasterBuffer to quantize
- * - reqcolors: the desired number of colors the palette should contain. will be set
- *   with the actual number of entries in the computed palette
- * - palette: preallocated array of palette entries that will be populated by the
- *   function
- * - maxval: max value of pixel intensity. In some cases, the input data has to
- *   be rescaled to compute the quantization. if the returned value of maxscale is
- *   less than 255, this means that the input pixels have been rescaled, and that
- *   the returned palette must be upscaled before being written to the png file
- * - forced_palette: entries that should appear in the computed palette
- * - num_forced_palette_entries: number of entries contained in "force_palette". if 0,
- *   "force_palette" can be NULL
- */
-int Blend_QuantizeImage(unsigned const char* source,
-        unsigned long width,
-        unsigned long height,
-        unsigned int *reqcolors, rgbaPixel *palette,
-        unsigned int *maxval,
-        rgbaPixel *forced_palette, int num_forced_palette_entries) {
-
-    rgbaPixel **apixels=NULL; /* pointer to the start rows of truecolor pixels */
-    register rgbaPixel *pP;
-    register int col;
-
-    unsigned char newmaxval;
-    acolorhist_vector achv, acolormap=NULL;
-
-    int row;
-    int colors;
-    int newcolors = 0;
-
-    int x;
-    /*  int channels;  */
-
-
-    *maxval = 255;
-
-    apixels = (rgbaPixel**)malloc(height * sizeof(rgbaPixel**));
-    if (!apixels) return 0;
-
-    for (row = 0; row < height; row++) {
-        apixels[row] = (rgbaPixel*)(source + (4 * width * row));
-    }
-
-   /*
-    ** Step 2: attempt to make a histogram of the colors, unclustered.
-    ** If at first we don't succeed, lower maxval to increase color
-    ** coherence and try again.  This will eventually terminate, with
-    ** maxval at worst 15, since 32^3 is approximately MAXCOLORS.
-                  [GRR POSSIBLE BUG:  what about 32^4 ?]
-    */
-    for ( ; ; ) {
-        achv = pam_computeacolorhist(
-            apixels, width, height, MAXCOLORS, &colors );
-        if ( achv != (acolorhist_vector) 0 )
-            break;
-        newmaxval = *maxval / 2;
-        for ( row = 0; row < height; ++row )
-            for ( col = 0, pP = apixels[row]; col < width; ++col, ++pP )
-                PAM_DEPTH( *pP, *pP, *maxval, newmaxval );
-        *maxval = newmaxval;
-    }
-    newcolors = MIN(colors, *reqcolors);
-    acolormap = mediancut(achv, colors, width * height, *maxval, newcolors);
-    pam_freeacolorhist(achv);
-
-    *reqcolors = newcolors;
-
-    for (x = 0; x < newcolors; ++x) {
-        palette[x].r = acolormap[x].acolor.r;
-        palette[x].g = acolormap[x].acolor.g;
-        palette[x].b = acolormap[x].acolor.b;
-        palette[x].a = acolormap[x].acolor.a;
-    }
-
-    free(acolormap);
-    free(apixels);
-    return 1;
-}
-
-int Blend_RemapPalette(unsigned char *pixels, int npixels,
-      rgbaPixel *palette, int numPaletteEntries, unsigned int maxval,
-      rgbPixel *rgb, unsigned char *a, int *num_a) {
-   int bot_idx, top_idx, x;
-   int remap[256];
-   /*
-    ** remap the palette colors so that all entries with
-    ** the maximal alpha value (i.e., fully opaque) are at the end and can
-    ** therefore be omitted from the tRNS chunk.  Note that the ordering of
-    ** opaque entries is reversed from how Step 3 arranged them--not that
-    ** this should matter to anyone.
-    */
-
-   for (top_idx = numPaletteEntries-1, bot_idx = x = 0;  x < numPaletteEntries;  ++x) {
-      if (palette[x].a == maxval)
-         remap[x] = top_idx--;
-      else
-         remap[x] = bot_idx++;
-   }
-   /* sanity check:  top and bottom indices should have just crossed paths */
-   if (bot_idx != top_idx + 1) {
-      return 0;
-   }
-
-   *num_a = bot_idx;
-
-   for(x=0;x<npixels;x++)
-      pixels[x] = remap[pixels[x]];
-
-   for (x = 0; x < numPaletteEntries; ++x) {
-      if(maxval == 255) {
-         a[remap[x]] = palette[x].a;
-         rgb[remap[x]].r = palette[x].r;
-         rgb[remap[x]].g = palette[x].g;
-         rgb[remap[x]].b = palette[x].b;
-      } else {
-         rgb[remap[x]].r = (palette[x].r * 255 + (maxval >> 1)) / maxval;
-         rgb[remap[x]].g = (palette[x].g * 255 + (maxval >> 1)) / maxval;
-         rgb[remap[x]].b = (palette[x].b * 255 + (maxval >> 1)) / maxval;
-         a[remap[x]] = (palette[x].a * 255 + (maxval >> 1)) / maxval;
-      }
-   }
-   return 1;
-}
-
-int Blend_ClassifyImage(unsigned const char* source,
-        unsigned long width,
-        unsigned long height,
-        unsigned char *pixels,
-        rgbaPixel *palette,
-        int numPaletteEntries) {
-   register int ind;
-   unsigned char *outrow,*pQ;
-   register rgbaPixel *pP;
-   acolorhash_table acht;
-   int usehash, row, col;
-   /*
-    ** Step 4: map the colors in the image to their closest match in the
-    ** new colormap, and write 'em out.
-    */
-   acht = pam_allocacolorhash( );
-   usehash = 1;
-
-   for ( row = 0; row < height; ++row ) {
-      outrow = &(pixels[row*width]);
-      col = 0;
-      pP = (rgbaPixel*)(source + (4 * width * row));
-      pQ = outrow;
-      do {
-         /* Check hash table to see if we have already matched this color. */
-         ind = pam_lookupacolor( acht, pP );
-         if ( ind == -1 ) {
-            /* No; search acolormap for closest match. */
-            register int i, r1, g1, b1, a1, r2, g2, b2, a2;
-            register long dist, newdist;
-
-            r1 = PAM_GETR( *pP );
-            g1 = PAM_GETG( *pP );
-            b1 = PAM_GETB( *pP );
-            a1 = PAM_GETA( *pP );
-            dist = 2000000000;
-            for ( i = 0; i < numPaletteEntries; ++i ) {
-               r2 = PAM_GETR( palette[i] );
-               g2 = PAM_GETG( palette[i] );
-               b2 = PAM_GETB( palette[i] );
-               a2 = PAM_GETA( palette[i] );
-               /* GRR POSSIBLE BUG */
-               newdist = ( r1 - r2 ) * ( r1 - r2 ) +  /* may overflow? */
-                     ( g1 - g2 ) * ( g1 - g2 ) +
-                     ( b1 - b2 ) * ( b1 - b2 ) +
-                     ( a1 - a2 ) * ( a1 - a2 );
-               if ( newdist < dist ) {
-                  ind = i;
-                  dist = newdist;
-               }
-            }
-            if ( usehash ) {
-               if ( pam_addtoacolorhash( acht, pP, ind ) < 0 ) {
-                  usehash = 0;
-               }
-            }
-         }
-
-         /*          *pP = acolormap[ind].acolor;  */
-         *pQ = (unsigned char)ind;
-
-         ++col;
-         ++pP;
-         ++pQ;
-
-      }
-      while ( col != width );
-   }
-   pam_freeacolorhash(acht);
-
-   return 1;
-}
-
+#include "octree.h"
 
 
 void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {
@@ -246,46 +44,93 @@ void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
 }
 
 
-void Blend_EncodePNG8Bit(unsigned const char* source, BlendBaton* baton,
-        unsigned long width, unsigned long height) {
-    unsigned int numPaletteEntries = baton->quality;
-    unsigned char *pixels = (unsigned char*)malloc(width * height * sizeof(unsigned char));
-    rgbaPixel palette[256];
-    unsigned int maxval;
-    Blend_QuantizeImage(source, width, height, &numPaletteEntries, palette, &maxval, NULL, 0);
-    Blend_ClassifyImage(source, width, height, pixels, palette, numPaletteEntries);
-    rgbPixel rgb[256];
-    unsigned char a[256];
-    int num_a;
-    int row, sample_depth;
+
+#define MAX_OCTREE_LEVELS 4
+
+void Blend_ReduceColors(
+    unsigned const char* source,
+    unsigned long width,
+    unsigned long height,
+    unsigned char* out,
+    octree<rgb> trees[],
+    unsigned limits[],
+    unsigned levels,
+    std::vector<unsigned> & alpha
+) {
+    std::vector<unsigned> alphaCount(alpha.size());
+    for(unsigned i=0; i<alpha.size(); i++)
+    {
+        alpha[i] = 0;
+        alphaCount[i] = 0;
+    }
+
+    for (unsigned y = 0; y < height; ++y)
+    {
+        unsigned const char* row = &(source[y * 4 * width]);
+        unsigned char* row_out = &(out[y * width]);
+        for (unsigned x = 0; x < width; ++x)
+        {
+            unsigned const char* val = &row[x * 4];
+            rgb c(val[0], val[1], val[2]);
+            byte index = 0;
+            int idx = -1;
+            for(int j=levels-1; j>0; j--){
+                if (val[3] >= limits[j] && trees[j].colors()>0) {
+                    index = idx = trees[j].quantize(c);
+                    break;
+                }
+            }
+            if (idx>=0 && idx<(int)alpha.size())
+            {
+                alpha[idx] += val[3];
+                alphaCount[idx]++;
+            }
+
+            row_out[x] = index;
+        }
+    }
+    for(unsigned i=0; i<alpha.size(); i++)
+    {
+        if (alphaCount[i]!=0)
+            alpha[i] /= alphaCount[i];
+    }
+}
 
 
+void Blend_EncodePNG(
+    unsigned const char* image,
+    BlendBaton* baton,
+    unsigned long width,
+    unsigned long height,
+    unsigned color_depth,
+    std::vector<rgb> & palette,
+    std::vector<unsigned> &alpha)
+{
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
 
     png_set_compression_level(png_ptr, Z_BEST_SPEED);
     png_set_compression_buffer_size(png_ptr, 32768);
 
-    if (numPaletteEntries <= 2)
-        sample_depth = 1;
-    else if (numPaletteEntries <= 4)
-        sample_depth = 2;
-    else if (numPaletteEntries <= 16)
-        sample_depth = 4;
-    else
-        sample_depth = 8;
-
-    png_set_IHDR(png_ptr, info_ptr, width, height, sample_depth,
+    png_set_IHDR(png_ptr, info_ptr, width, height, color_depth,
                  PNG_COLOR_TYPE_PALETTE,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                  PNG_FILTER_TYPE_DEFAULT);
 
-    Blend_RemapPalette(pixels, width * height, palette, numPaletteEntries,
-                 maxval, rgb, a, &num_a);
+    png_set_PLTE(png_ptr, info_ptr, reinterpret_cast<png_color*>(&palette[0]), palette.size());
 
-    png_set_PLTE(png_ptr, info_ptr, (png_colorp)(rgb), numPaletteEntries);
-    if (num_a) {
-        png_set_tRNS(png_ptr, info_ptr, a, num_a, NULL);
+    // make transparent lowest indexes, so tRNS is small
+    if (alpha.size() > 0) {
+        std::vector<png_byte> trans(alpha.size());
+        unsigned alphaSize = 0; //truncate to nonopaque values
+        for (unsigned i = 0; i < alpha.size(); i++) {
+            trans[i] = alpha[i];
+            if (alpha[i] < 255)
+                alphaSize = i + 1;
+        }
+        if (alphaSize > 0) {
+            png_set_tRNS(png_ptr, info_ptr, (png_bytep)&trans[0], alphaSize, 0);
+        }
     }
 
     png_set_write_fn(png_ptr, (png_voidp)baton, Blend_WritePNG, NULL);
@@ -294,17 +139,182 @@ void Blend_EncodePNG8Bit(unsigned const char* source, BlendBaton* baton,
     png_write_info(png_ptr, info_ptr);
     png_set_packing(png_ptr);
 
-    for (row=0; row < height; row++) {
-        unsigned char *rowptr = &(pixels[row * width]);
-        png_write_row(png_ptr, rowptr);
+    for (int y = 0; y < height; y++) {
+        png_write_row(png_ptr, (png_bytep)(image + (width * y)));
     }
     png_write_end(png_ptr, info_ptr);
 
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    free(pixels);
 }
 
+void Blend_EncodePNGOctree(
+    unsigned const char* source,
+    BlendBaton* baton,
+    unsigned long width,
+    unsigned long height,
+    bool alpha
+) {
+    unsigned max_colors = baton->quality;
+    int trans_mode = alpha ? 4 : 0;
 
+    // number of alpha ranges in png256 format; 2 results in smallest image with binary transparency
+    // 3 is minimum for semitransparency, 4 is recommended, anything else is worse
+    const unsigned TRANSPARENCY_LEVELS = (trans_mode==2||trans_mode<0)?MAX_OCTREE_LEVELS:2;
+    unsigned alphaHist[256];//transparency histogram
+    unsigned semiCount = 0;//sum of semitransparent pixels
+    unsigned meanAlpha = 0;
+    for(int i=0; i<256; i++){
+        alphaHist[i] = 0;
+    }
+    for (unsigned y = 0; y < height; ++y){
+        for (unsigned x = 0; x < width; ++x){
+            unsigned val = source[y * 4 * width + 4 * x + 3]; // Get alpha value of that pixel.
+            if (trans_mode==0)
+                val=255;
+            alphaHist[val]++;
+            meanAlpha += val;
+            if (val>0 && val<255)
+                semiCount++;
+        }
+    }
+    meanAlpha /= width*height;
+
+    // transparency ranges division points
+    unsigned limits[MAX_OCTREE_LEVELS+1];
+    limits[0] = 0;
+    limits[1] = (alphaHist[0]>0)?1:0;
+    limits[TRANSPARENCY_LEVELS] = 256;
+    unsigned alphaHistSum = 0;
+    for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++)
+        limits[j] = limits[1];
+    for(unsigned i=1; i<256; i++){
+        alphaHistSum += alphaHist[i];
+        for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++){
+            if (alphaHistSum<semiCount*(j)/4)
+                limits[j] = i;
+        }
+    }
+    // avoid too wide full transparent range
+    if (limits[1]>256/(TRANSPARENCY_LEVELS-1))
+        limits[1]=256/(TRANSPARENCY_LEVELS-1);
+    // avoid too wide full opaque range
+    if (limits[TRANSPARENCY_LEVELS-1]<212)
+        limits[TRANSPARENCY_LEVELS-1]=212;
+    if (TRANSPARENCY_LEVELS==2) {
+        limits[1]=127;
+    }
+    // estimated number of colors from palette assigned to chosen ranges
+    unsigned cols[MAX_OCTREE_LEVELS];
+    // count colors
+    for(unsigned j=1; j<=TRANSPARENCY_LEVELS; j++) {
+        cols[j-1] = 0;
+        for(unsigned i=limits[j-1]; i<limits[j]; i++){
+            cols[j-1] += alphaHist[i];
+        }
+    }
+
+    unsigned divCoef = width*height-cols[0];
+    if (divCoef==0) divCoef = 1;
+    cols[0] = cols[0]>0?1:0; // fully transparent color (one or not at all)
+
+    if (max_colors>=64) {
+        // give chance less populated but not empty cols to have at least few colors(12)
+        unsigned minCols = (12+1)*divCoef/(max_colors-cols[0]);
+        for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++) if (cols[j]>12 && cols[j]<minCols) {
+                divCoef += minCols-cols[j];
+                cols[j] = minCols;
+            }
+    }
+    unsigned usedColors = cols[0];
+    for(unsigned j=1; j<TRANSPARENCY_LEVELS-1; j++){
+        cols[j] = cols[j]*(max_colors-cols[0])/divCoef;
+        usedColors += cols[j];
+    }
+    // use rest for most opaque group of pixels
+    cols[TRANSPARENCY_LEVELS-1] = max_colors-usedColors;
+
+    //no transparency
+    if (trans_mode == 0)
+    {
+        limits[1] = 0;
+        cols[0] = 0;
+        cols[1] = max_colors;
+    }
+
+    // octree table for separate alpha range with 1-based index (0 is fully transparent: no color)
+    octree<rgb> trees[MAX_OCTREE_LEVELS];
+    for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++)
+        trees[j].setMaxColors(cols[j]);
+    for (unsigned y = 0; y < height; ++y)
+    {
+        unsigned const char* row = &(source[y * 4 * width]);
+        for (unsigned x = 0; x < width; ++x)
+        {
+            unsigned const char* val = &(row[x * 4]);
+
+            // insert to proper tree based on alpha range
+            for(unsigned j=TRANSPARENCY_LEVELS-1; j>0; j--){
+                if (cols[j]>0 && val[3] >=limits[j]) {
+                    trees[j].insert(rgb(val[0], val[1], val[2]));
+                    break;
+                }
+            }
+        }
+    }
+    unsigned leftovers = 0;
+    std::vector<rgb> palette;
+    if (cols[0])
+        palette.push_back(rgb(0,0,0));
+
+    for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++) {
+        if (cols[j]>0) {
+            if (leftovers>0) {
+                cols[j] += leftovers;
+                trees[j].setMaxColors(cols[j]);
+                leftovers = 0;
+            }
+            std::vector<rgb> pal;
+            trees[j].setOffset(palette.size());
+            trees[j].create_palette(pal);
+            assert(pal.size() <= max_colors);
+            leftovers = cols[j]-pal.size();
+            cols[j] = pal.size();
+            for(unsigned i=0; i<pal.size(); i++){
+                palette.push_back(pal[i]);
+            }
+            assert(palette.size() <= 256);
+        }
+    }
+
+    //transparency values per palette index
+    std::vector<unsigned> alphaTable;
+    //alphaTable.resize(palette.size());//allow semitransparency also in almost opaque range
+    if (trans_mode != 0)
+        alphaTable.resize(palette.size() - cols[TRANSPARENCY_LEVELS-1]);
+
+
+
+    unsigned char* reduced_image = (unsigned char*)malloc(width * height);
+
+    int depth = 1;
+    if (palette.size() > 16) depth = 8;
+    else if (palette.size() > 4) depth = 4;
+    else if (palette.size() > 2) depth = 2;
+
+    if (palette.size() == 1) {
+        // 1 color image ->  write 1-bit color depth PNG
+        memset(reduced_image, 0, width * height);
+        if (meanAlpha < 255 && cols[0] == 0) {
+            alphaTable.resize(1);
+            alphaTable[0] = meanAlpha;
+        }
+    } else {
+        Blend_ReduceColors(source, width, height, reduced_image, trees, limits, TRANSPARENCY_LEVELS, alphaTable);
+    }
+
+    Blend_EncodePNG(reduced_image, baton, width, height, depth, palette, alphaTable);
+    free(reduced_image);
+}
 
 void JPEG_errorHandler(j_common_ptr cinfo) {
     // libjpeg recommends doing this memory alignment trickery.
@@ -384,7 +394,7 @@ void Blend_Encode(unsigned const char* source, BlendBaton* baton,
     if (baton->format == BLEND_FORMAT_JPEG) {
         Blend_EncodeJPEG(source, baton, width, height, alpha);
     } else if (baton->format == BLEND_FORMAT_PNG && baton->quality > 0) {
-        Blend_EncodePNG8Bit(source, baton, width, height);
+        Blend_EncodePNGOctree(source, baton, width, height, alpha);
     } else {
         Blend_EncodePNG(source, baton, width, height, alpha);
     }
