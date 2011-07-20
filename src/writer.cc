@@ -19,7 +19,7 @@ void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {
 }
 
 void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
-        unsigned long width, unsigned long height, bool alpha) {
+                     unsigned long width, unsigned long height, bool alpha) {
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
 
@@ -47,41 +47,31 @@ void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
 
 #define MAX_OCTREE_LEVELS 4
 
-void Blend_ReduceColors(
-    unsigned const char* source,
-    unsigned long width,
-    unsigned long height,
-    unsigned char* out,
-    octree<rgb> trees[],
-    unsigned limits[],
-    unsigned levels,
-    std::vector<unsigned> & alpha
-) {
+void Blend_ReduceColors(unsigned const char* source, unsigned long width,
+                        unsigned long height, unsigned char* out,
+                        octree<rgb> trees[], unsigned limits[], unsigned levels,
+                        std::vector<unsigned> & alpha) {
     std::vector<unsigned> alphaCount(alpha.size());
-    for(unsigned i=0; i<alpha.size(); i++)
-    {
+    for (unsigned i = 0; i < alpha.size(); i++) {
         alpha[i] = 0;
         alphaCount[i] = 0;
     }
 
-    for (unsigned y = 0; y < height; ++y)
-    {
+    for (unsigned y = 0; y < height; ++y) {
         unsigned const char* row = &(source[y * 4 * width]);
         unsigned char* row_out = &(out[y * width]);
-        for (unsigned x = 0; x < width; ++x)
-        {
+        for (unsigned x = 0; x < width; ++x) {
             unsigned const char* val = &row[x * 4];
             rgb c(val[0], val[1], val[2]);
             byte index = 0;
             int idx = -1;
-            for(int j=levels-1; j>0; j--){
-                if (val[3] >= limits[j] && trees[j].colors()>0) {
+            for (int j = levels - 1; j > 0; j--) {
+                if (val[3] >= limits[j] && trees[j].colors() > 0) {
                     index = idx = trees[j].quantize(c);
                     break;
                 }
             }
-            if (idx>=0 && idx<(int)alpha.size())
-            {
+            if (idx >= 0 && idx < (int)alpha.size()) {
                 alpha[idx] += val[3];
                 alphaCount[idx]++;
             }
@@ -89,23 +79,18 @@ void Blend_ReduceColors(
             row_out[x] = index;
         }
     }
-    for(unsigned i=0; i<alpha.size(); i++)
-    {
-        if (alphaCount[i]!=0)
+    for (unsigned i = 0; i < alpha.size(); i++) {
+        if (alphaCount[i] != 0) {
             alpha[i] /= alphaCount[i];
+        }
     }
 }
 
 
-void Blend_EncodePNG(
-    unsigned const char* image,
-    BlendBaton* baton,
-    unsigned long width,
-    unsigned long height,
-    unsigned color_depth,
-    std::vector<rgb> & palette,
-    std::vector<unsigned> &alpha)
-{
+void Blend_EncodePNG(unsigned const char* image, BlendBaton* baton,
+                     unsigned long width, unsigned long height,
+                     unsigned color_depth, std::vector<rgb> & palette,
+                     std::vector<unsigned> &alpha) {
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
 
@@ -125,8 +110,9 @@ void Blend_EncodePNG(
         unsigned alphaSize = 0; //truncate to nonopaque values
         for (unsigned i = 0; i < alpha.size(); i++) {
             trans[i] = alpha[i];
-            if (alpha[i] < 255)
+            if (alpha[i] < 255) {
                 alphaSize = i + 1;
+            }
         }
         if (alphaSize > 0) {
             png_set_tRNS(png_ptr, info_ptr, (png_bytep)&trans[0], alphaSize, 0);
@@ -147,95 +133,104 @@ void Blend_EncodePNG(
     png_destroy_write_struct(&png_ptr, &info_ptr);
 }
 
-void Blend_EncodePNGOctree(
-    unsigned const char* source,
-    BlendBaton* baton,
-    unsigned long width,
-    unsigned long height,
-    bool alpha
-) {
+void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
+                           unsigned long width, unsigned long height,
+                           bool alpha) {
     unsigned max_colors = baton->quality;
     int trans_mode = alpha ? 4 : 0;
 
     // number of alpha ranges in png256 format; 2 results in smallest image with binary transparency
     // 3 is minimum for semitransparency, 4 is recommended, anything else is worse
-    const unsigned TRANSPARENCY_LEVELS = (trans_mode==2||trans_mode<0)?MAX_OCTREE_LEVELS:2;
+    const unsigned TRANSPARENCY_LEVELS = (trans_mode == 2 || trans_mode < 0) ? MAX_OCTREE_LEVELS : 2;
     unsigned alphaHist[256];//transparency histogram
     unsigned semiCount = 0;//sum of semitransparent pixels
     unsigned meanAlpha = 0;
-    for(int i=0; i<256; i++){
+    for (int i = 0; i < 256; i++) {
         alphaHist[i] = 0;
     }
-    for (unsigned y = 0; y < height; ++y){
-        for (unsigned x = 0; x < width; ++x){
+    for (unsigned y = 0; y < height; ++y) {
+        for (unsigned x = 0; x < width; ++x) {
             unsigned val = source[y * 4 * width + 4 * x + 3]; // Get alpha value of that pixel.
-            if (trans_mode==0)
-                val=255;
+            if (trans_mode == 0) {
+                val = 255;
+            }
             alphaHist[val]++;
             meanAlpha += val;
-            if (val>0 && val<255)
+            if (val > 0 && val < 255) {
                 semiCount++;
+            }
         }
     }
-    meanAlpha /= width*height;
+    meanAlpha /= width * height;
 
     // transparency ranges division points
-    unsigned limits[MAX_OCTREE_LEVELS+1];
+    unsigned limits[MAX_OCTREE_LEVELS + 1];
     limits[0] = 0;
-    limits[1] = (alphaHist[0]>0)?1:0;
+    limits[1] = (alphaHist[0] > 0) ? 1 : 0;
     limits[TRANSPARENCY_LEVELS] = 256;
     unsigned alphaHistSum = 0;
-    for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++)
+    for (unsigned j = 1; j < TRANSPARENCY_LEVELS; j++) {
         limits[j] = limits[1];
-    for(unsigned i=1; i<256; i++){
+    }
+    for (unsigned i = 1; i < 256; i++) {
         alphaHistSum += alphaHist[i];
-        for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++){
-            if (alphaHistSum<semiCount*(j)/4)
+        for (unsigned j = 1; j < TRANSPARENCY_LEVELS; j++) {
+            if (alphaHistSum < semiCount * (j) / 4) {
                 limits[j] = i;
+            }
         }
     }
     // avoid too wide full transparent range
-    if (limits[1]>256/(TRANSPARENCY_LEVELS-1))
-        limits[1]=256/(TRANSPARENCY_LEVELS-1);
-    // avoid too wide full opaque range
-    if (limits[TRANSPARENCY_LEVELS-1]<212)
-        limits[TRANSPARENCY_LEVELS-1]=212;
-    if (TRANSPARENCY_LEVELS==2) {
-        limits[1]=127;
+    if (limits[1] > 256 / (TRANSPARENCY_LEVELS - 1)) {
+        limits[1] = 256 / (TRANSPARENCY_LEVELS - 1);
     }
+
+    // avoid too wide full opaque range
+    if (limits[TRANSPARENCY_LEVELS - 1] < 212) {
+        limits[TRANSPARENCY_LEVELS - 1] = 212;
+    }
+
+    if (TRANSPARENCY_LEVELS == 2) {
+        limits[1] = 127;
+    }
+
     // estimated number of colors from palette assigned to chosen ranges
     unsigned cols[MAX_OCTREE_LEVELS];
+
     // count colors
-    for(unsigned j=1; j<=TRANSPARENCY_LEVELS; j++) {
-        cols[j-1] = 0;
-        for(unsigned i=limits[j-1]; i<limits[j]; i++){
-            cols[j-1] += alphaHist[i];
+    for (unsigned j = 1; j <= TRANSPARENCY_LEVELS; j++) {
+        cols[j - 1] = 0;
+        for (unsigned i = limits[j - 1]; i < limits[j]; i++) {
+            cols[j - 1] += alphaHist[i];
         }
     }
 
-    unsigned divCoef = width*height-cols[0];
-    if (divCoef==0) divCoef = 1;
-    cols[0] = cols[0]>0?1:0; // fully transparent color (one or not at all)
+    unsigned divCoef = width * height - cols[0];
+    if (divCoef == 0) {
+        divCoef = 1;
+    }
+    cols[0] = cols[0] > 0 ? 1 : 0; // fully transparent color (one or not at all)
 
-    if (max_colors>=64) {
+    if (max_colors >= 64) {
         // give chance less populated but not empty cols to have at least few colors(12)
-        unsigned minCols = (12+1)*divCoef/(max_colors-cols[0]);
-        for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++) if (cols[j]>12 && cols[j]<minCols) {
-                divCoef += minCols-cols[j];
+        unsigned minCols = (12 + 1) * divCoef / (max_colors - cols[0]);
+        for (unsigned j = 1; j < TRANSPARENCY_LEVELS; j++) {
+            if (cols[j] > 12 && cols[j] < minCols) {
+                divCoef += minCols - cols[j];
                 cols[j] = minCols;
             }
+        }
     }
     unsigned usedColors = cols[0];
-    for(unsigned j=1; j<TRANSPARENCY_LEVELS-1; j++){
-        cols[j] = cols[j]*(max_colors-cols[0])/divCoef;
+    for (unsigned j = 1; j < TRANSPARENCY_LEVELS - 1; j++) {
+        cols[j] = cols[j] * (max_colors - cols[0]) / divCoef;
         usedColors += cols[j];
     }
     // use rest for most opaque group of pixels
-    cols[TRANSPARENCY_LEVELS-1] = max_colors-usedColors;
+    cols[TRANSPARENCY_LEVELS - 1] = max_colors - usedColors;
 
-    //no transparency
-    if (trans_mode == 0)
-    {
+    // no transparency
+    if (trans_mode == 0) {
         limits[1] = 0;
         cols[0] = 0;
         cols[1] = max_colors;
@@ -243,18 +238,18 @@ void Blend_EncodePNGOctree(
 
     // octree table for separate alpha range with 1-based index (0 is fully transparent: no color)
     octree<rgb> trees[MAX_OCTREE_LEVELS];
-    for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++)
+    for (unsigned j = 1; j < TRANSPARENCY_LEVELS; j++) {
         trees[j].setMaxColors(cols[j]);
-    for (unsigned y = 0; y < height; ++y)
-    {
+    }
+
+    for (unsigned y = 0; y < height; ++y) {
         unsigned const char* row = &(source[y * 4 * width]);
-        for (unsigned x = 0; x < width; ++x)
-        {
+        for (unsigned x = 0; x < width; ++x) {
             unsigned const char* val = &(row[x * 4]);
 
             // insert to proper tree based on alpha range
-            for(unsigned j=TRANSPARENCY_LEVELS-1; j>0; j--){
-                if (cols[j]>0 && val[3] >=limits[j]) {
+            for (unsigned j = TRANSPARENCY_LEVELS - 1; j > 0; j--) {
+                if (cols[j] > 0 && val[3] >= limits[j]) {
                     trees[j].insert(rgb(val[0], val[1], val[2]));
                     break;
                 }
@@ -263,12 +258,13 @@ void Blend_EncodePNGOctree(
     }
     unsigned leftovers = 0;
     std::vector<rgb> palette;
-    if (cols[0])
-        palette.push_back(rgb(0,0,0));
+    if (cols[0]) {
+        palette.push_back(rgb(0, 0, 0));
+    }
 
-    for(unsigned j=1; j<TRANSPARENCY_LEVELS; j++) {
-        if (cols[j]>0) {
-            if (leftovers>0) {
+    for (unsigned j = 1; j < TRANSPARENCY_LEVELS; j++) {
+        if (cols[j] > 0) {
+            if (leftovers > 0) {
                 cols[j] += leftovers;
                 trees[j].setMaxColors(cols[j]);
                 leftovers = 0;
@@ -277,9 +273,9 @@ void Blend_EncodePNGOctree(
             trees[j].setOffset(palette.size());
             trees[j].create_palette(pal);
             assert(pal.size() <= max_colors);
-            leftovers = cols[j]-pal.size();
+            leftovers = cols[j] - pal.size();
             cols[j] = pal.size();
-            for(unsigned i=0; i<pal.size(); i++){
+            for (unsigned i = 0; i < pal.size(); i++) {
                 palette.push_back(pal[i]);
             }
             assert(palette.size() <= 256);
@@ -289,17 +285,21 @@ void Blend_EncodePNGOctree(
     //transparency values per palette index
     std::vector<unsigned> alphaTable;
     //alphaTable.resize(palette.size());//allow semitransparency also in almost opaque range
-    if (trans_mode != 0)
-        alphaTable.resize(palette.size() - cols[TRANSPARENCY_LEVELS-1]);
-
+    if (trans_mode != 0) {
+        alphaTable.resize(palette.size() - cols[TRANSPARENCY_LEVELS - 1]);
+    }
 
 
     unsigned char* reduced_image = (unsigned char*)malloc(width * height);
 
     int depth = 1;
-    if (palette.size() > 16) depth = 8;
-    else if (palette.size() > 4) depth = 4;
-    else if (palette.size() > 2) depth = 2;
+    if (palette.size() > 16) {
+        depth = 8;
+    } else if (palette.size() > 4) {
+        depth = 4;
+    } else if (palette.size() > 2) {
+        depth = 2;
+    }
 
     if (palette.size() == 1) {
         // 1 color image ->  write 1-bit color depth PNG
@@ -329,12 +329,12 @@ void JPEG_errorMessage(j_common_ptr cinfo) {
     JPEGErrorManager* err = (JPEGErrorManager*)cinfo->err;
 
     char buffer[JMSG_LENGTH_MAX];
-    (*cinfo->err->format_message) (cinfo, buffer);
+    (*cinfo->err->format_message)(cinfo, buffer);
     err->baton->message = buffer;
 }
 
 void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
-        unsigned long width, unsigned long height, bool alpha) {
+                      unsigned long width, unsigned long height, bool alpha) {
     jpeg_compress_struct info;
     JPEGErrorManager err;
 
@@ -390,7 +390,7 @@ void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
 }
 
 void Blend_Encode(unsigned const char* source, BlendBaton* baton,
-        unsigned long width, unsigned long height, bool alpha) {
+                  unsigned long width, unsigned long height, bool alpha) {
     if (baton->format == BLEND_FORMAT_JPEG) {
         Blend_EncodeJPEG(source, baton, width, height, alpha);
     } else if (baton->format == BLEND_FORMAT_PNG && baton->quality > 0) {

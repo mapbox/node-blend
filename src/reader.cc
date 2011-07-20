@@ -1,7 +1,7 @@
 #include "reader.h"
 
 PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
-        ImageReader(src, len), depth(0), color(-1) {
+    ImageReader(src, len), depth(0), color(-1) {
     // Decode PNG header.
     png = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, errorHandler, errorHandler);
     assert(png);
@@ -65,7 +65,7 @@ unsigned char* PNGImageReader::decode() {
     if (depth < 8)
         png_set_packing(png);
     if (color == PNG_COLOR_TYPE_GRAY ||
-        color == PNG_COLOR_TYPE_GRAY_ALPHA)
+            color == PNG_COLOR_TYPE_GRAY_ALPHA)
         png_set_gray_to_rgb(png);
 
     // Always add an alpha channel.
@@ -105,7 +105,7 @@ PNGImageReader::~PNGImageReader() {
 }
 
 JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
-        ImageReader(src, len) {
+    ImageReader(src, len) {
     err.reader = this;
     info.err = jpeg_std_error(&err.pub);
     err.pub.error_exit = errorHandler;
@@ -139,7 +139,7 @@ void JPEGImageReader::errorMessage(j_common_ptr cinfo) {
     JPEGErrorManager* error = (JPEGErrorManager*)cinfo->err;
 
     char buffer[JMSG_LENGTH_MAX];
-    (*cinfo->err->format_message) (cinfo, buffer);
+    (*cinfo->err->format_message)(cinfo, buffer);
     error->reader->message = buffer;
 }
 
@@ -181,7 +181,7 @@ unsigned char* JPEGImageReader::decode() {
         unsigned int* image = (unsigned int*)destination;
         for (int j = width - 1, k = j * 3; j >= 0; k = --j * 3) {
             image[j] = 0xFF << 24 | destination[k + 2] << 16 |
-                destination[k + 1] << 8 | destination[k];
+                       destination[k + 1] << 8 | destination[k];
         }
     }
 

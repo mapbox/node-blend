@@ -14,7 +14,9 @@
 
 class ImageReader {
 public:
-    virtual unsigned char* decode() { return NULL; };
+    virtual unsigned char* decode() {
+        return NULL;
+    };
     ImageReader(unsigned char* src, size_t len) : width(0), height(0),
         alpha(false), source(src), length(len), pos(0) {}
     ImageReader(const char* msg) : width(0), height(0), alpha(false),

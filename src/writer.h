@@ -22,13 +22,13 @@ struct JPEGErrorManager {
 
 void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length);
 void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
-    unsigned long width, unsigned long height, bool alpha);
+                     unsigned long width, unsigned long height, bool alpha);
 
 void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
-    unsigned long width, unsigned long height, bool alpha);
+                      unsigned long width, unsigned long height, bool alpha);
 
 void Blend_Encode(unsigned const char* source, BlendBaton* baton,
-    unsigned long width, unsigned long height, bool alpha);
+                  unsigned long width, unsigned long height, bool alpha);
 
 
 #endif

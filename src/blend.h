@@ -33,8 +33,8 @@ enum BlendFormat {
     ThrowException(Exception::TypeError(String::New(message)))
 
 v8::Handle<v8::Value> Blend(const v8::Arguments& args);
-int EIO_Blend(eio_req *req);
-int EIO_AfterBlend(eio_req *req);
+int EIO_Blend(eio_req* req);
+int EIO_AfterBlend(eio_req* req);
 
 
 struct BlendBaton {
