@@ -26,7 +26,7 @@
 #include <vector>
 #include <iostream>
 #include <deque>
-
+#include <algorithm>
 
 typedef uint8_t byte ;
 struct rgb {
