@@ -125,7 +125,7 @@ void Blend_EncodePNG(unsigned const char* image, BlendBaton* baton,
     png_write_info(png_ptr, info_ptr);
     png_set_packing(png_ptr);
 
-    for (int y = 0; y < height; y++) {
+    for (unsigned int y = 0; y < height; y++) {
         png_write_row(png_ptr, (png_bytep)(image + (width * y)));
     }
     png_write_end(png_ptr, info_ptr);
