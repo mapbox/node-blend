@@ -35,41 +35,42 @@ Handle<Value> Blend(const Arguments& args) {
 
 
     BlendFormat format = BLEND_FORMAT_PNG;
-    int quality = -1;
+    int quality = 0;
+    bool reencode = false;
 
     // Validate options
     if (!options.IsEmpty()) {
+        Local<Value> quality_val = options->Get(String::NewSymbol("quality"));
+        if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
+            quality = quality_val->Int32Value();
+        }
+
         Local<Value> format_val = options->Get(String::NewSymbol("format"));
         if (!format_val.IsEmpty() && format_val->BooleanValue()) {
-            Local<Value> quality_val = options->Get(String::NewSymbol("quality"));
             if (strcmp(*String::AsciiValue(format_val), "jpeg") == 0 ||
                     strcmp(*String::AsciiValue(format_val), "jpg") == 0) {
                 format = BLEND_FORMAT_JPEG;
-                quality = 80;
-                if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
-                    quality = quality_val->Int32Value();
-                    if (quality < 0 || quality > 100) {
-                        return TYPE_EXCEPTION("JPEG quality is range 0-100.");
-                    }
+                if (quality == 0) quality = 80;
+                else if (quality < 0 || quality > 100) {
+                    return TYPE_EXCEPTION("JPEG quality is range 0-100.");
                 }
             } else if (strcmp(*String::AsciiValue(format_val), "png") == 0) {
-                if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
-                    quality = quality_val->Int32Value();
-                    if (quality < 2 || quality > 256) {
-                        return TYPE_EXCEPTION("PNG images must be quantized between 2 and 256 colors.");
-                    }
+                if (quality == 1 || quality > 256) {
+                    return TYPE_EXCEPTION("PNG images must be quantized between 2 and 256 colors.");
                 }
             } else {
                 return TYPE_EXCEPTION("Invalid output format.");
             }
         }
+
+        reencode = options->Get(String::NewSymbol("reencode"))->BooleanValue();
     }
 
     Local<Array> buffers = Local<Array>::Cast(args[0]);
     uint32_t length = buffers->Length();
     if (length < 1) {
         return TYPE_EXCEPTION("First argument must contain at least one Buffer.");
-    } else if (length == 1) {
+    } else if (length == 1 && !reencode) {
         if (!Buffer::HasInstance(buffers->Get(0))) {
             return TYPE_EXCEPTION("All elements must be Buffers.");
         } else {
@@ -81,7 +82,7 @@ Handle<Value> Blend(const Arguments& args) {
             TRY_CATCH_CALL(Context::GetCurrent()->Global(), callback, 2, argv);
         }
     } else {
-        BlendBaton* baton = new BlendBaton(callback, format, quality);
+        BlendBaton* baton = new BlendBaton(callback, format, quality, reencode);
         for (uint32_t i = 0; i < length; i++) {
             if (!Buffer::HasInstance(buffers->Get(i))) {
                 delete baton;
@@ -174,7 +175,9 @@ int EIO_Blend(eio_req* req) {
         if (size == 0) {
             width = layer->width;
             height = layer->height;
-            if (!layer->alpha) {
+
+            // Short-circuit when we're not reencoding.
+            if (!layer->alpha && !baton->reencode) {
                 baton->result = (*image).first;
                 baton->length = (*image).second;
                 delete layer;
@@ -209,7 +212,10 @@ int EIO_Blend(eio_req* req) {
     }
 
     if (!baton->error && size) {
-        Blend_CompositeTopDown(images, size, width, height);
+        if (size > 1) {
+            Blend_CompositeTopDown(images, size, width, height);
+        }
+
         Blend_Encode((unsigned char*)images[0], baton, width, height, alpha);
     }
 

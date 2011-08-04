@@ -46,13 +46,14 @@ struct BlendBaton {
 
     BlendFormat format;
     int quality;
+    bool reencode;
 
     unsigned char* result;
     size_t length;
     size_t max;
 
-    BlendBaton(v8::Handle<v8::Function> cb, BlendFormat fmt, int qlt)
-        : error(false), format(fmt), quality(qlt), result(NULL), length(0), max(0) {
+    BlendBaton(v8::Handle<v8::Function> cb, BlendFormat fmt, int qlt, bool reenc)
+        : error(false), format(fmt), quality(qlt), reencode(reenc), result(NULL), length(0), max(0) {
         ev_ref(EV_DEFAULT_UC);
         callback = v8::Persistent<v8::Function>::New(cb);
     }
