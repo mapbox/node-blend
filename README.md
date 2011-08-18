@@ -33,3 +33,8 @@ Mac OS X ships with png at /usr/X11, which will also be searched.
 If you have jpeg or png installed in a custom location you can do:
 
     ./configure --with-jpeg=/opt/jpeg --with-png=/opt/png
+
+# Development
+
+To run tests for this module, run `npm install --dev` to install the testing framework, then
+`npm test`. Tests require [Imagemagick](http://www.imagemagick.org/script/index.php) for its `compare` utility.
