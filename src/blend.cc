@@ -2,6 +2,8 @@
 #include "reader.h"
 #include "writer.h"
 
+#include <sstream>
+
 using namespace v8;
 using namespace node;
 
@@ -161,7 +163,7 @@ int EIO_Blend(eio_req* req) {
     // Iterate from the last to first image.
     ImageBuffers::reverse_iterator image = baton->buffers.rbegin();
     ImageBuffers::reverse_iterator end = baton->buffers.rend();
-    for (; image < end; image++) {
+    for (int index = total - 1; image < end; image++, index--) {
         ImageReader* layer = ImageReader::create((*image).first, (*image).second);
 
         // Skip invalid images.
@@ -197,6 +199,15 @@ int EIO_Blend(eio_req* req) {
             baton->message = layer->message;
             delete layer;
             break;
+        }
+        else if (layer->warnings.size()) {
+            std::vector<std::string>::iterator pos = layer->warnings.begin();
+            std::vector<std::string>::iterator end = layer->warnings.end();
+            for (; pos < end; pos++) {
+                std::ostringstream msg;
+                msg << "Layer " << index << ": " << *pos;
+                baton->warnings.push_back(msg.str());
+            }
         }
 
         size++;
@@ -234,11 +245,19 @@ int EIO_AfterBlend(eio_req* req) {
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
     if (!baton->error && baton->result) {
+        Local<Array> warnings = Array::New();
+        std::vector<std::string>::iterator pos = baton->warnings.begin();
+        std::vector<std::string>::iterator end = baton->warnings.end();
+        for (int i = 0; pos < end; pos++, i++) {
+            warnings->Set(i, String::New((*pos).c_str()));
+        }
+
         Local<Value> argv[] = {
             Local<Value>::New(Null()),
-            Local<Value>::New(Buffer::New((char*)baton->result, baton->length)->handle_)
+            Local<Value>::New(Buffer::New((char*)baton->result, baton->length)->handle_),
+            Local<Value>::New(warnings)
         };
-        TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 2, argv);
+        TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
     } else {
         Local<Value> argv[] = {
             Local<Value>::New(Exception::Error(String::New(baton->message.c_str())))

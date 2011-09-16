@@ -11,6 +11,7 @@
 #include <cstring>
 
 #include <string>
+#include <vector>
 
 class ImageReader {
 public:
@@ -29,6 +30,7 @@ public:
     bool alpha;
 
     std::string message;
+    std::vector<std::string> warnings;
 protected:
     unsigned char* source;
     size_t length;

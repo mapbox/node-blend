@@ -11,6 +11,7 @@
 #include <cstring>
 
 #include <string>
+#include <vector>
 #include <queue>
 
 typedef std::pair<unsigned char*, size_t> ImageBuffer;
@@ -43,6 +44,7 @@ struct BlendBaton {
 
     bool error;
     std::string message;
+    std::vector<std::string> warnings;
 
     BlendFormat format;
     int quality;

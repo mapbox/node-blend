@@ -3,7 +3,7 @@
 PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
     ImageReader(src, len), depth(0), color(-1) {
     // Decode PNG header.
-    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, errorHandler, errorHandler);
+    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, errorHandler, warningHandler);
     assert(png);
     info = png_create_info_struct(png);
     assert(info);
@@ -43,6 +43,11 @@ void PNGImageReader::errorHandler(png_structp png, png_const_charp error_msg) {
         longjmp(png_jmpbuf(png), 1);
     }
     exit(1);
+}
+
+void PNGImageReader::warningHandler(png_structp png, png_const_charp error_msg) {
+    PNGImageReader* reader = static_cast<PNGImageReader*>(png_get_io_ptr(png));
+    reader->warnings.push_back(std::string(error_msg));
 }
 
 unsigned char* PNGImageReader::decode() {
