@@ -47,7 +47,7 @@ void PNGImageReader::errorHandler(png_structp png, png_const_charp error_msg) {
 
 void PNGImageReader::warningHandler(png_structp png, png_const_charp error_msg) {
     PNGImageReader* reader = static_cast<PNGImageReader*>(png_get_io_ptr(png));
-    reader->warnings.push_back(std::string(error_msg));
+    reader->warnings.push_back(error_msg);
 }
 
 unsigned char* PNGImageReader::decode() {
@@ -117,6 +117,7 @@ JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
     err.pub.output_message = errorMessage;
 
     if (setjmp(err.jump)) {
+        jpeg_destroy_decompress(&info);
         width = 0;
         height = 0;
 
@@ -134,6 +135,10 @@ JPEGImageReader::JPEGImageReader(unsigned char* src, size_t len) :
 void JPEGImageReader::errorHandler(j_common_ptr cinfo) {
     // libjpeg recommends doing this memory alignment trickery.
     JPEGErrorManager* error = (JPEGErrorManager*)cinfo->err;
+
+    (*error->pub.output_message)(cinfo);
+
+    jpeg_destroy(cinfo);
 
     /* Return control to the setjmp point */
     longjmp(error->jump, 1);
@@ -161,6 +166,7 @@ unsigned char* JPEGImageReader::decode() {
     }
 
     if (setjmp(err.jump)) {
+        jpeg_destroy_decompress(&info);
         free(surface);
 
         // Error message was set by JPEGImageReader::errorMessage.
@@ -181,6 +187,7 @@ unsigned char* JPEGImageReader::decode() {
         offset += jpeg_read_scanlines(&info, row_pointers + offset, height - offset);
     }
 
+    // Convert to RGBA.
     for (unsigned i = 0; i < height; i++) {
         unsigned char* destination = surface + i * width * 4;
         unsigned int* image = (unsigned int*)destination;
