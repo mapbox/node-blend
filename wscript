@@ -26,9 +26,7 @@ main() {
 }
 '''
 
-jpeg_test_prog = test_program  % jpeg_inc_name
-
-jpeg_test_version = '''
+jpeg_test_prog = '''
 #include "stdio.h"
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +44,8 @@ main() {
     return 0;
     #endif
 }
-''' % jpeg_inc_name
+'''
+jpeg_test_version = jpeg_test_prog % jpeg_inc_name
 
 
 jpeg_search_paths = ['/usr','/usr/local']
@@ -96,14 +95,15 @@ def configure(conf):
  
   # jpeg checks
   if o.jpeg_dir:
-      lib, include = _build_paths(conf,o.jpeg_dir)
+      lib, inc = _build_paths(conf,o.jpeg_dir)
+      header = os.path.join(inc,jpeg_inc_name)
 
       if conf.check_cxx(lib='jpeg',
-                fragment=jpeg_test_prog,
+                fragment=jpeg_test_prog % header,
                 uselib_store='JPEG',
                 libpath=lib,
-                msg='Checking for libjpeg at %s' % lib,
-                includes=include):
+                msg='Checking for libjpeg at %s' % header,
+                includes=inc):
           Utils.pprint('GREEN', 'Sweet, found viable jpeg dependency at: %s ' % o.jpeg_dir)
       else:
           _conf_exit(conf,'jpeg libs/headers not found at %s' % o.jpeg_dir)
@@ -113,14 +113,16 @@ def configure(conf):
       found_lib = '/usr'
       found_inc = '/usr'
       for p in jpeg_search_paths:
+          lib = os.path.join(p,'lib')
           inc = os.path.join(p,'include')
           header = os.path.join(inc,jpeg_inc_name)
           if os.path.exists(header):
               lib = os.path.join(p,'lib')
               if conf.check(lib='jpeg',
+                        fragment=jpeg_test_prog % header,
                         uselib_store='JPEG',
                         libpath=lib,
-                        msg='Checking for libjpeg at %s' % lib,
+                        msg='Checking for libjpeg at %s' % header,
                         includes=inc):
                   found = True
                   found_lib = lib
