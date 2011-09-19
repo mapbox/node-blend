@@ -140,7 +140,8 @@ def configure(conf):
                     msg='Checking for libjpeg version >= %s' % min_jpeg_version,
                     includes=found_inc):
               _conf_exit(conf,'jpeg version >= 8 not found (upgrade to http://www.ijg.org/files/jpegsrc.v8c.tar.gz)')
-
+          conf.env.append_value("LINKFLAGS", '-L%s' % found_lib)
+          conf.env.append_value("CXXFLAGS", '-I%s' % found_inc)
   # png checks
   if o.png_dir:
       lib, include = _build_paths(conf,o.png_dir)
