@@ -38,8 +38,8 @@ extern "C" {
 
 int
 main() {
-    #if JPEG_LIB_VERSION_MAJOR < 8
-     #error "JPEG_LIB_VERSION_MAJOR must be greater than or equal to 8"
+    #if JPEG_LIB_VERSION < 80
+     #error "JPEG_LIB_VERSION must be greater than or equal to 80"
     #else
     return 0;
     #endif
