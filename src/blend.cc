@@ -93,8 +93,8 @@ Handle<Value> Blend(const Arguments& args) {
                 baton->add(buffers->Get(i)->ToObject());
             }
         }
-
-        eio_custom(EIO_Blend, EIO_PRI_DEFAULT, EIO_AfterBlend, baton);
+        baton->request.data = baton;
+        uv_queue_work(uv_default_loop(), &baton->request, Work_Blend, Work_AfterBlend);
     }
 
     return scope.Close(Undefined());
@@ -148,7 +148,7 @@ inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned lo
     }
 }
 
-int EIO_Blend(eio_req* req) {
+void Work_Blend(uv_work_t* req) {
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
     int total = baton->buffers.size();
@@ -236,11 +236,9 @@ int EIO_Blend(eio_req* req) {
             images[i] = NULL;
         }
     }
-
-    return 0;
 }
 
-int EIO_AfterBlend(eio_req* req) {
+void Work_AfterBlend(uv_work_t* req) {
     HandleScope scope;
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
@@ -266,7 +264,6 @@ int EIO_AfterBlend(eio_req* req) {
     }
 
     delete baton;
-    return 0;
 }
 
 extern "C" void init(Handle<Object> target) {

@@ -5,6 +5,6 @@ clean:
 	node-waf clean
 
 test: build
-	@expresso test/*.test.js
+	@NODE_PATH=./lib:$NODE_PATH expresso test/*.test.js
 
 .PHONY: build clean test

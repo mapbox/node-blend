@@ -6,6 +6,8 @@ import Utils
 
 TARGET = 'blend'
 TARGET_FILE = '%s.node' % TARGET
+built = 'build/Release/%s' % TARGET_FILE
+dest = 'lib/%s' % TARGET_FILE
 
 jpeg_inc_name = 'jpeglib.h'
 min_jpeg_version = 8
@@ -187,3 +189,7 @@ def shutdown():
   if Options.commands['clean']:
     if os.path.exists(TARGET_FILE):
       unlink(TARGET_FILE)
+  else:
+      if os.path.exists(built):
+          copy(built,dest)
+

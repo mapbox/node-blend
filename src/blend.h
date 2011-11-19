@@ -34,11 +34,12 @@ enum BlendFormat {
     ThrowException(Exception::TypeError(String::New(message)))
 
 v8::Handle<v8::Value> Blend(const v8::Arguments& args);
-int EIO_Blend(eio_req* req);
-int EIO_AfterBlend(eio_req* req);
+void Work_Blend(uv_work_t* req);
+void Work_AfterBlend(uv_work_t* req);
 
 
 struct BlendBaton {
+    uv_work_t request;
     v8::Persistent<v8::Function> callback;
     ImageBuffers buffers;
 
@@ -56,7 +57,7 @@ struct BlendBaton {
 
     BlendBaton(v8::Handle<v8::Function> cb, BlendFormat fmt, int qlt, bool reenc)
         : error(false), format(fmt), quality(qlt), reencode(reenc), result(NULL), length(0), max(0) {
-        ev_ref(EV_DEFAULT_UC);
+        uv_ref(uv_default_loop());
         callback = v8::Persistent<v8::Function>::New(cb);
     }
     void add(v8::Handle<v8::Object> buffer) {
@@ -67,7 +68,7 @@ struct BlendBaton {
         buffers.push_back(std::make_pair<unsigned char*, size_t>(image, length));
     }
     ~BlendBaton() {
-        ev_unref(EV_DEFAULT_UC);
+        uv_unref(uv_default_loop());
 
         ImageBuffers::iterator cur = buffers.begin();
         ImageBuffers::iterator end = buffers.end();
