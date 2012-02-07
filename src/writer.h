@@ -3,7 +3,6 @@
 
 #include <png.h>
 #include <jpeglib.h>
-#include <setjmp.h>
 #include <zlib.h>
 #include <assert.h>
 
@@ -16,7 +15,6 @@
 
 struct JPEGErrorManager {
     jpeg_error_mgr pub;
-    jmp_buf jump;
     BlendBaton* baton;
 };
 

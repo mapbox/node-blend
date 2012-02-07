@@ -1,10 +1,9 @@
-var assert = require('./support/assert');
-var Buffer = require('buffer').Buffer;
-var crypto = require('crypto');
+var assert = require('assert');
 var fs = require('fs');
-var blend = require('..');
 
-if (process.setMaxListeners) process.setMaxListeners(0);
+var blend = require('..');
+var utilities = require('./support/utilities');
+
 
 var images = [
     fs.readFileSync('test/fixture/1.png'),
@@ -14,63 +13,41 @@ var images = [
     fs.readFileSync('test/fixture/5.png')
 ];
 
-exports['test blend function with 128 colors'] = function(beforeExit) {
-    var completed = false;
 
-    blend(images, { format: 'png', quality: 128 }, function(err, data) {
-        if (err) throw err;
-        assert.imageEqualsFile(data, 'test/fixture/results/1.png', function(err) {
-            completed = true;
-            if (err && !err.similarity) throw err;
-            assert.ok(err.similarity >= 35);
+function checkSimilarity(similarity, done) {
+    return function(err) {
+        if (err && !err.similarity) return done(err);
+        assert.ok(err.similarity >= similarity);
+        done();
+    }
+}
+
+describe('quantization', function() {
+    it('should quantize to 128 colors', function(done) {
+        blend(images, { format: 'png', quality: 128 }, function(err, data) {
+            if (err) return done(err);
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(35, done));
         });
     });
 
-    beforeExit(function() { assert.ok(completed); });
-};
-
-exports['test blend function with 64 colors'] = function(beforeExit) {
-    var completed = false;
-
-    blend(images, { format: 'png', quality: 64 }, function(err, data) {
-        if (err) throw err;
-        assert.imageEqualsFile(data, 'test/fixture/results/1.png', function(err) {
-            completed = true;
-            if (err && !err.similarity) throw err;
-            assert.ok(err.similarity >= 30);
+    it('should quantize to 64 colors', function(done) {
+        blend(images, { format: 'png', quality: 64 }, function(err, data) {
+            if (err) return done(err);
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(30, done));
         });
     });
 
-    beforeExit(function() { assert.ok(completed); });
-};
-
-exports['test blend function with 16 colors'] = function(beforeExit) {
-    var completed = false;
-
-    blend(images, { format: 'png', quality: 16 }, function(err, data) {
-        if (err) throw err;
-        assert.imageEqualsFile(data, 'test/fixture/results/1.png', function(err) {
-            completed = true;
-            if (err && !err.similarity) throw err;
-            assert.ok(err.similarity >= 24);
+    it('should quantize to 16 colors', function(done) {
+        blend(images, { format: 'png', quality: 16 }, function(err, data) {
+            if (err) return done(err);
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(24, done));
         });
     });
 
-    beforeExit(function() { assert.ok(completed); });
-};
-
-
-exports['test blend function with 8 colors'] = function(beforeExit) {
-    var completed = false;
-
-    blend(images, { format: 'png', quality: 8 }, function(err, data) {
-        if (err) throw err;
-        assert.imageEqualsFile(data, 'test/fixture/results/1.png', function(err) {
-            completed = true;
-            if (err && !err.similarity) throw err;
-            assert.ok(err.similarity >= 20);
+    it('should quantize to 8 colors', function(done) {
+        blend(images, { format: 'png', quality: 16 }, function(err, data) {
+            if (err) return done(err);
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(20, done));
         });
     });
-
-    beforeExit(function() { assert.ok(completed); });
-};
+});

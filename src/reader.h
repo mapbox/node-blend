@@ -3,7 +3,6 @@
 
 #include <png.h>
 #include <jpeglib.h>
-#include <setjmp.h>
 #include <zlib.h>
 #include <assert.h>
 
@@ -65,7 +64,6 @@ public:
 protected:
     struct JPEGErrorManager {
         jpeg_error_mgr pub;
-        jmp_buf jump;
         JPEGImageReader* reader;
     };
 

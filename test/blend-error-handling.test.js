@@ -1,29 +1,154 @@
-var assert = require('./support/assert');
-var Buffer = require('buffer').Buffer;
-var crypto = require('crypto');
+var assert = require('assert');
 var fs = require('fs');
-var blend = require('..');
 
-if (process.setMaxListeners) process.setMaxListeners(0);
+var blend = require('..');
+var utilities = require('./support/utilities');
+
 
 var images = [
-    fs.readFileSync('test/fixture/32.png')
+    fs.readFileSync('test/fixture/1.png'),
+    fs.readFileSync('test/fixture/2.png'),
+    fs.readFileSync('test/fixture/32.png'),
+    fs.readFileSync('test/fixture/1293.jpg'),
+    fs.readFileSync('test/fixture/1294.png')
 ];
 
-exports['test image loading with "Incorrect bKGD chunk index value"'] = function(exit) {
-    var completed = false; exit(function() { assert.ok(completed); });
 
-    blend([ images[0] ], { reencode: true }, function(err, data, warnings) {
-        if (err) throw err;
-        assert.ok(data.length > 1000 && data.length < 1500, 'reencoding bogus image yields implausible size');
-        assert.deepEqual(warnings, [ 'Layer 0: Incorrect bKGD chunk index value' ]);
+describe('invalid arguments', function() {
+    it('should throw with a bogus first argument', function() {
+        assert.throws(function() {
+            blend(true, function(err) {});
+        }, /First argument must be an array of Buffers/);
+    });
 
-        // Check that we don't reencode the error.
-        blend([ data ], { reencode: true }, function(err, data2, warnings) {
-            completed = true;
-            if (err) throw err;
-            assert.deepEqual(warnings, []);
-            assert.deepEqual(data, data2);
+    it('should throw with an empty first argument', function() {
+        assert.throws(function() {
+            blend([], function(err) {});
+        }, /First argument must contain at least one Buffer/);
+    });
+
+    it('should throw if the first argument contains bogus elements', function() {
+        assert.throws(function() {
+            blend([1, 2, 3], function(err) {});
+        }, /All elements must be Buffers/);
+    });
+
+    it('should not allow unknown formats', function() {
+        assert.throws(function() {
+            blend([
+                fs.readFileSync('test/fixture/1c.jpg'),
+                fs.readFileSync('test/fixture/2.png')
+            ], {
+                format: 'xbm'
+            }, function() {});
+        }, /Invalid output format/);
+    });
+
+    it('should not allow negative quality', function() {
+        assert.throws(function() {
+            blend([
+                fs.readFileSync('test/fixture/1c.jpg'),
+                fs.readFileSync('test/fixture/2.png')
+            ], {
+                format: 'jpeg',
+                quality: -10
+            }, function() {});
+        }, /JPEG quality is range 0-100/);
+    });
+
+    it('should not allow quality above 100', function() {
+        assert.throws(function() {
+            blend([
+                fs.readFileSync('test/fixture/1c.jpg'),
+                fs.readFileSync('test/fixture/2.png')
+            ], {
+                format: 'jpeg',
+                quality: 110
+            }, function() {});
+        }, /JPEG quality is range 0-100/);
+    });
+});
+
+describe('invalid images', function() {
+    it('should report an unknown image format with bogus buffers', function(done) {
+        var buffer = new Buffer(1024);
+        buffer.fill(0);
+        blend([ buffer, buffer ], function(err, data) {
+            if (!err) return done(new Error('Error expected'));
+            assert.equal(err.message, "Unknown image format");
+            done();
         });
     });
-};
+
+    it('should report an invalid chunk type with a semi-bogus buffer', function(done) {
+        var buffer = new Buffer('\x89\x50\x4E\x47\x0D\x0A\x1A\x0A' + Array(48).join('\0'), 'binary');
+        blend([ buffer, images[1] ], function(err, data) {
+            if (!err) return done(new Error('Error expected'));
+            assert.equal(err.message, '[00][00][00][00]: invalid chunk type');
+            done();
+        });
+    });
+
+    it('should report a read error with a buffer that only contains the header', function(done) {
+        var buffer = new Buffer('\x89\x50\x4E\x47\x0D\x0A\x1A\x0A', 'binary');
+        blend([ buffer, images[1] ], function(err, data) {
+            if (!err) return done(new Error('Error expected'));
+            assert.equal(err.message, 'Read Error');
+            done();
+        });
+    });
+
+    it('should error out with "Incorrect bKGD chunk index value"', function(done) {
+        blend([ images[2] ], { reencode: true }, function(err, data, warnings) {
+            if (err) return done(err);
+            assert.ok(data.length > 1000 && data.length < 1500, 'reencoding bogus image yields implausible size');
+            assert.deepEqual(warnings, [ 'Layer 0: Incorrect bKGD chunk index value' ]);
+
+            // Check that we don't reencode the error.
+            blend([ data ], { reencode: true }, function(err, data2, warnings) {
+                if (err) return done(err);
+                assert.deepEqual(warnings, []);
+                assert.deepEqual(data, data2);
+                done();
+            });
+        });
+    });
+
+    it('should report a bogus Huffman table definition', function(done) {
+        blend([ images[2], images[3] ], function(err, data, warnings) {
+            if (!err) return done(new Error('expected error'));
+            assert.equal(err.message, 'Bogus Huffman table definition');
+
+            // Test working state after error.
+            blend([ images[2] ], { reencode: true }, done);
+        });
+    });
+
+    it('should error out on blending an invalid JPEG image', function(done) {
+        var buffer = new Buffer(32);
+        buffer.fill(0);
+        buffer[0] = 0xFF;
+        buffer[1] = 0xD8;
+        blend([
+            buffer,
+            fs.readFileSync('test/fixture/2.png')
+        ], function(err, data) {
+            assert.ok(err);
+            assert.ok(err.message === "Premature end of JPEG file" ||
+                      err.message === "JPEG datastream contains no image");
+            done();
+        });
+    });
+
+    it('should error out on blending a malformed JPEG image', function(done) {
+        blend([
+            fs.readFileSync('test/fixture/1d.jpg'),
+            fs.readFileSync('test/fixture/2.png')
+        ], function(err, data) {
+            assert.ok(err);
+            assert.ok(err.message === "Corrupt JPEG data: bad Huffman code" ||
+                      err.message === "Unsupported marker type 0xa8");
+            done();
+        });
+    });
+});
