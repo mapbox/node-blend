@@ -12,15 +12,16 @@
 
 #include <string>
 #include <vector>
-#include <queue>
+
+typedef v8::Persistent<v8::Object> PersistentObject;
 
 struct ImageBuffer {
-    unsigned char *buffer;
+    PersistentObject buffer;
+    unsigned char *data;
     size_t length;
 };
 
 typedef std::vector<ImageBuffer> ImageBuffers;
-typedef v8::Persistent<v8::Object> PersistentObject;
 
 enum BlendFormat {
     BLEND_FORMAT_PNG,
@@ -64,29 +65,13 @@ struct BlendBaton {
         uv_ref(uv_default_loop());
         callback = v8::Persistent<v8::Function>::New(cb);
     }
-    void add(v8::Handle<v8::Object> buffer) {
-        ImageBuffer image;
-        image.length = node::Buffer::Length(buffer);
-        image.buffer = (unsigned char*)malloc(image.length);
-        assert(image.buffer);
-        memcpy(image.buffer, node::Buffer::Data(buffer), image.length);
-        buffers.push_back(image);
-    }
+
     ~BlendBaton() {
         uv_unref(uv_default_loop());
 
-        ImageBuffers::iterator cur = buffers.begin();
-        ImageBuffers::iterator end = buffers.end();
-        for (; cur != end; cur++) {
-            // If we free the buffer, make sure we don't free the same buffer
-            // again under a different name.
-            if (cur->buffer == result) {
-                result = NULL;
-            }
-            free(cur->buffer);
-            cur->buffer = NULL;
+        for (ImageBuffers::iterator cur = buffers.begin(); cur != buffers.end(); cur++) {
+            cur->buffer.Dispose();
         }
-        buffers.clear();
 
         if (result) {
             free(result);

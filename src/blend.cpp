@@ -86,12 +86,17 @@ Handle<Value> Blend(const Arguments& args) {
     } else {
         BlendBaton* baton = new BlendBaton(callback, format, quality, reencode);
         for (uint32_t i = 0; i < length; i++) {
-            if (!Buffer::HasInstance(buffers->Get(i))) {
+            ImageBuffer image;
+            if (Buffer::HasInstance(buffers->Get(i))) {
+                image.buffer = Persistent<Object>::New(buffers->Get(i)->ToObject());
+            } else {
                 delete baton;
                 return TYPE_EXCEPTION("All elements must be Buffers.");
-            } else {
-                baton->add(buffers->Get(i)->ToObject());
             }
+
+            image.length = node::Buffer::Length(image.buffer);
+            image.data = (unsigned char*)node::Buffer::Data(image.buffer);
+            baton->buffers.push_back(image);
         }
         baton->request.data = baton;
         uv_queue_work(uv_default_loop(), &baton->request, Work_Blend, Work_AfterBlend);
@@ -164,7 +169,7 @@ void Work_Blend(uv_work_t* req) {
     ImageBuffers::reverse_iterator image = baton->buffers.rbegin();
     ImageBuffers::reverse_iterator end = baton->buffers.rend();
     for (int index = total - 1; image != end; image++, index--) {
-        ImageReader* layer = ImageReader::create(image->buffer, image->length);
+        ImageReader* layer = ImageReader::create(image->data, image->length);
 
         // Skip invalid images.
         if (layer == NULL || layer->width == 0 || layer->height == 0) {
@@ -180,8 +185,10 @@ void Work_Blend(uv_work_t* req) {
 
             // Short-circuit when we're not reencoding.
             if (!layer->alpha && !baton->reencode) {
-                baton->result = image->buffer;
+                baton->result = (unsigned char *)malloc(image->length);
                 baton->length = image->length;
+                assert(baton->result);
+                memcpy(baton->result, image->data, image->length);
                 delete layer;
                 break;
             }
