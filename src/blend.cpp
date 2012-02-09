@@ -163,8 +163,8 @@ void Work_Blend(uv_work_t* req) {
     // Iterate from the last to first image.
     ImageBuffers::reverse_iterator image = baton->buffers.rbegin();
     ImageBuffers::reverse_iterator end = baton->buffers.rend();
-    for (int index = total - 1; image < end; image++, index--) {
-        ImageReader* layer = ImageReader::create((*image).first, (*image).second);
+    for (int index = total - 1; image != end; image++, index--) {
+        ImageReader* layer = ImageReader::create(image->buffer, image->length);
 
         // Skip invalid images.
         if (layer == NULL || layer->width == 0 || layer->height == 0) {
@@ -180,8 +180,8 @@ void Work_Blend(uv_work_t* req) {
 
             // Short-circuit when we're not reencoding.
             if (!layer->alpha && !baton->reencode) {
-                baton->result = (*image).first;
-                baton->length = (*image).second;
+                baton->result = image->buffer;
+                baton->length = image->length;
                 delete layer;
                 break;
             }
@@ -203,7 +203,7 @@ void Work_Blend(uv_work_t* req) {
         else if (layer->warnings.size()) {
             std::vector<std::string>::iterator pos = layer->warnings.begin();
             std::vector<std::string>::iterator end = layer->warnings.end();
-            for (; pos < end; pos++) {
+            for (; pos != end; pos++) {
                 std::ostringstream msg;
                 msg << "Layer " << index << ": " << *pos;
                 baton->warnings.push_back(msg.str());
@@ -246,7 +246,7 @@ void Work_AfterBlend(uv_work_t* req) {
         Local<Array> warnings = Array::New();
         std::vector<std::string>::iterator pos = baton->warnings.begin();
         std::vector<std::string>::iterator end = baton->warnings.end();
-        for (int i = 0; pos < end; pos++, i++) {
+        for (int i = 0; pos != end; pos++, i++) {
             warnings->Set(i, String::New((*pos).c_str()));
         }
 
