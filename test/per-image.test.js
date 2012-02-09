@@ -95,7 +95,7 @@ describe('per-image settings', function() {
         blend([], {
             width: 128,
             height: 128,
-            matte: '12345678',
+            matte: '12345678'
         }, function(err, data) {
             if (err) return done(err);
             utilities.imageEqualsFile(data, 'test/fixture/results/25.png', done);
@@ -106,5 +106,33 @@ describe('per-image settings', function() {
         assert.throws(function() {
             blend([], { matte: '12345678' }, function() {});
         }, /Without buffers, you have to specify width and height/);
+    });
+
+    it('should nicely stitch the images together', function(done) {
+        blend([
+            { buffer: fs.readFileSync('test/fixture/5241-12663.png'), x: -43, y: -120 },
+            { buffer: fs.readFileSync('test/fixture/5242-12663.png'), x: -43+256, y: -120 },
+            { buffer: fs.readFileSync('test/fixture/5243-12663.png'), x: -43+512, y: -120 },
+            { buffer: fs.readFileSync('test/fixture/5244-12663.png'), x: -43+768, y: -120 },
+            { buffer: fs.readFileSync('test/fixture/5241-12664.png'), x: -43, y: -120+256 },
+            { buffer: fs.readFileSync('test/fixture/5242-12664.png'), x: -43+256, y: -120+256 },
+            { buffer: fs.readFileSync('test/fixture/5243-12664.png'), x: -43+512, y: -120+256 },
+            { buffer: fs.readFileSync('test/fixture/5244-12664.png'), x: -43+768, y: -120+256 },
+            { buffer: fs.readFileSync('test/fixture/5241-12665.png'), x: -43, y: -120+512 },
+            { buffer: fs.readFileSync('test/fixture/5242-12665.png'), x: -43+256, y: -120+512 },
+            { buffer: fs.readFileSync('test/fixture/5243-12665.png'), x: -43+512, y: -120+512 },
+            { buffer: fs.readFileSync('test/fixture/5244-12665.png'), x: -43+768, y: -120+512 },
+            { buffer: fs.readFileSync('test/fixture/5241-12666.png'), x: -43, y: -120+768 },
+            { buffer: fs.readFileSync('test/fixture/5242-12666.png'), x: -43+256, y: -120+768 },
+            { buffer: fs.readFileSync('test/fixture/5243-12666.png'), x: -43+512, y: -120+768 },
+            { buffer: fs.readFileSync('test/fixture/5244-12666.png'), x: -43+768, y: -120+768 }
+        ], {
+            width: 700,
+            height: 600,
+            quality: 64
+        }, function(err, data) {
+            if (err) return done(err);
+            utilities.imageEqualsFile(data, 'test/fixture/results/stitched.png', done);
+        });
     });
 });
