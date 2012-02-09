@@ -4,6 +4,17 @@ var fs = require('fs');
 var blend = require('..');
 var utilities = require('./support/utilities');
 
+// Polyfill buffers.
+if (!Buffer) {
+    var Buffer = require('buffer').Buffer;
+    var SlowBuffer = require('buffer').SlowBuffer;
+    SlowBuffer.prototype.fill = Buffer.prototype.fill = function(fill) {
+        for (var i = 0; i < this.length; i++) {
+            this[i] = fill;
+        }
+    };
+}
+
 
 var images = [
     fs.readFileSync('test/fixture/1.png'),

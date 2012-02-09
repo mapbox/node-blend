@@ -8,7 +8,6 @@
 using namespace v8;
 using namespace node;
 
-
 unsigned int hexToUInt32Color(char *hex) {
     if (!hex) return 0;
     if (hex[0] == '#') hex++;
@@ -157,60 +156,11 @@ Handle<Value> Blend(const Arguments& args) {
         baton->images.push_back(image);
     }
 
-    uv_queue_work(uv_default_loop(), &baton.release()->request, Work_Blend, Work_AfterBlend);
+    QUEUE_WORK(baton.release(), Work_Blend, Work_AfterBlend);
 
     return scope.Close(Undefined());
 }
 
-// inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned long width, unsigned long height) {
-//     size_t length = width * height;
-//     unsigned int *target = images[0];
-//     for (long px = length - 1; px >= 0; px--) {
-//         // Starting pixel
-//         unsigned int abgr = target[px];
-
-//         // Skip if topmost pixel is opaque.
-//         if (abgr >= 0xFF000000) continue;
-
-//         for (int i = 1; i < size; i++) {
-//             unsigned int *source = images[i];
-//             if (source[px] <= 0x00FFFFFF) {
-//                 // Lower pixel is fully transparent.
-//                 continue;
-//             } else if (abgr <= 0x00FFFFFF) {
-//                 // Upper pixel is fully transparent.
-//                 abgr = source[px];
-//             } else {
-//                 // Both pixels have transparency.
-//                 unsigned int rgba0 = source[px];
-//                 unsigned int rgba1 = abgr;
-
-//                 // From http://trac.mapnik.org/browser/trunk/include/mapnik/graphics.hpp#L337
-//                 unsigned a1 = (rgba1 >> 24) & 0xff;
-//                 unsigned r1 = rgba1 & 0xff;
-//                 unsigned g1 = (rgba1 >> 8) & 0xff;
-//                 unsigned b1 = (rgba1 >> 16) & 0xff;
-
-//                 unsigned a0 = (rgba0 >> 24) & 0xff;
-//                 unsigned r0 = (rgba0 & 0xff) * a0;
-//                 unsigned g0 = ((rgba0 >> 8) & 0xff) * a0;
-//                 unsigned b0 = ((rgba0 >> 16) & 0xff) * a0;
-
-//                 a0 = ((a1 + a0) << 8) - a0 * a1;
-
-//                 r0 = ((((r1 << 8) - r0) * a1 + (r0 << 8)) / a0);
-//                 g0 = ((((g1 << 8) - g0) * a1 + (g0 << 8)) / a0);
-//                 b0 = ((((b1 << 8) - b0) * a1 + (b0 << 8)) / a0);
-//                 a0 = a0 >> 8;
-//                 abgr = (a0 << 24) | (b0 << 16) | (g0 << 8) | (r0);
-//             }
-//             if (abgr >= 0xFF000000) break;
-//         }
-
-//         // Merge pixel back.
-//         target[px] = abgr;
-//     }
-// }
 
 inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
     if (source <= 0x00FFFFFF) {
@@ -266,7 +216,7 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     }
 }
 
-void Work_Blend(uv_work_t* req) {
+WORKER_BEGIN(Work_Blend) {
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
     int total = baton->images.size();
@@ -287,7 +237,7 @@ void Work_Blend(uv_work_t* req) {
         // Error out on invalid images.
         if (layer.get() == NULL || layer->width == 0 || layer->height == 0) {
             baton->message = layer->message;
-            return;
+            WORKER_END();
         }
 
         int visibleWidth = (int)layer->width + image->x;
@@ -312,13 +262,13 @@ void Work_Blend(uv_work_t* req) {
             assert(baton->result);
             memcpy(baton->result, image->data, image->dataLength);
             baton->resultLength = image->dataLength;
-            return;
+            WORKER_END();
         }
 
         if (!layer->decode()) {
             // Decoding failed.
             baton->message = layer->message;
-            return;
+            WORKER_END();
         }
         else if (layer->warnings.size()) {
             std::vector<std::string>::iterator pos = layer->warnings.begin();
@@ -350,13 +300,13 @@ void Work_Blend(uv_work_t* req) {
         std::ostringstream msg;
         msg << "Image dimensions " << baton->width << "x" << baton->height << " are invalid";
         baton->message = msg.str();
-        return;
+        WORKER_END();
     }
 
     unsigned int *target = (unsigned int *)malloc(sizeof(unsigned int) * pixels);
     if (!target) {
         baton->message = "Memory allocation failed";
-        return;
+        WORKER_END();
     }
 
     // When we don't actually have transparent pixels, we don't need to set
@@ -377,6 +327,7 @@ void Work_Blend(uv_work_t* req) {
     Blend_Encode((unsigned char*)target, baton, alpha);
     free(target);
     target = NULL;
+    WORKER_END();
 }
 
 void freeBuffer(char *data, void *hint) {
@@ -384,7 +335,7 @@ void freeBuffer(char *data, void *hint) {
     data = NULL;
 }
 
-void Work_AfterBlend(uv_work_t* req) {
+WORKER_BEGIN(Work_AfterBlend) {
     HandleScope scope;
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
@@ -419,6 +370,7 @@ void Work_AfterBlend(uv_work_t* req) {
     }
 
     delete baton;
+    WORKER_END();
 }
 
 extern "C" void init(Handle<Object> target) {

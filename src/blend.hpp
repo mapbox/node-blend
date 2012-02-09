@@ -3,6 +3,7 @@
 
 #include <v8.h>
 #include <node.h>
+#include <node_version.h>
 #include <node_buffer.h>
 #include <png.h>
 #include <jpeglib.h>
@@ -15,6 +16,18 @@
 #include <tr1/memory>
 
 #include "reader.hpp"
+
+
+#if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
+    #define WORKER_BEGIN(name)                  int name(eio_req *req)
+    #define WORKER_END()                        return 0;
+    #define QUEUE_WORK(baton, worker, after)    eio_custom((worker), EIO_PRI_DEFAULT, (after), (baton));
+#else
+    #define WORKER_BEGIN(name)                  void name(uv_work_t *req)
+    #define WORKER_END()                        return;
+    #define QUEUE_WORK(baton, worker, after)    uv_queue_work(uv_default_loop(), &(baton)->request, (worker), (after));
+#endif
+
 
 typedef v8::Persistent<v8::Object> PersistentObject;
 
@@ -53,12 +66,14 @@ enum BlendFormat {
     ThrowException(Exception::TypeError(String::New(message)))
 
 v8::Handle<v8::Value> Blend(const v8::Arguments& args);
-void Work_Blend(uv_work_t* req);
-void Work_AfterBlend(uv_work_t* req);
+WORKER_BEGIN(Work_Blend);
+WORKER_BEGIN(Work_AfterBlend);
 
 
 struct BlendBaton {
+#if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0
     uv_work_t request;
+#endif
     v8::Persistent<v8::Function> callback;
     Images images;
 
@@ -87,16 +102,24 @@ struct BlendBaton {
         resultLength(0),
         max(0)
     {
+#if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0
         this->request.data = this;
         uv_ref(uv_default_loop());
+#else
+        ev_unref(EV_DEFAULT_UC);
+#endif
     }
 
     ~BlendBaton() {
-        uv_unref(uv_default_loop());
-
         for (Images::iterator cur = images.begin(); cur != images.end(); cur++) {
             (*cur)->buffer.Dispose();
         }
+
+#if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0
+        uv_ref(uv_default_loop());
+#else
+        ev_unref(EV_DEFAULT_UC);
+#endif
 
         // Note: THe result buffer is freed by the node Buffer's free callback
 
