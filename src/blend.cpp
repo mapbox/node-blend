@@ -68,39 +68,52 @@ Handle<Value> Blend(const Arguments& args) {
         reencode = options->Get(String::NewSymbol("reencode"))->BooleanValue();
     }
 
-    Local<Array> buffers = Local<Array>::Cast(args[0]);
-    uint32_t length = buffers->Length();
+    Local<Array> images = Local<Array>::Cast(args[0]);
+    uint32_t length = images->Length();
     if (length < 1) {
         return TYPE_EXCEPTION("First argument must contain at least one Buffer.");
     } else if (length == 1 && !reencode) {
-        if (!Buffer::HasInstance(buffers->Get(0))) {
-            return TYPE_EXCEPTION("All elements must be Buffers.");
-        } else {
+        Local<Value> buffer = images->Get(0);
+        if (Buffer::HasInstance(buffer)) {
             // Directly pass through buffer if it's the only one.
             Local<Value> argv[] = {
                 Local<Value>::New(Null()),
-                Local<Value>::New(buffers->Get(0))
+                buffer
             };
             TRY_CATCH_CALL(Context::GetCurrent()->Global(), callback, 2, argv);
-        }
-    } else {
-        BlendBaton* baton = new BlendBaton(callback, format, quality, reencode);
-        for (uint32_t i = 0; i < length; i++) {
-            ImageBuffer image;
-            if (Buffer::HasInstance(buffers->Get(i))) {
-                image.buffer = Persistent<Object>::New(buffers->Get(i)->ToObject());
-            } else {
-                delete baton;
-                return TYPE_EXCEPTION("All elements must be Buffers.");
+            return scope.Close(Undefined());
+        } else {
+            // Check whether the argument is a complex image with offsets etc.
+            // In that case, we don't throw but continue going through the blend
+            // process below.
+            bool valid = false;
+            if (buffer->IsObject()) {
+                Local<Object> props = buffer->ToObject();
+                valid = props->Has(String::NewSymbol("buffer")) &&
+                        Buffer::HasInstance(props->Get(String::NewSymbol("buffer")));
             }
-
-            image.length = node::Buffer::Length(image.buffer);
-            image.data = (unsigned char*)node::Buffer::Data(image.buffer);
-            baton->buffers.push_back(image);
+            if (!valid) {
+                return TYPE_EXCEPTION("All elements must be Buffers or objects with a 'buffer' property.");
+            }
         }
-        baton->request.data = baton;
-        uv_queue_work(uv_default_loop(), &baton->request, Work_Blend, Work_AfterBlend);
     }
+
+    BlendBaton* baton = new BlendBaton(callback, format, quality, reencode);
+    for (uint32_t i = 0; i < length; i++) {
+        Image image;
+        if (Buffer::HasInstance(images->Get(i))) {
+            image.buffer = Persistent<Object>::New(images->Get(i)->ToObject());
+        } else {
+            delete baton;
+            return TYPE_EXCEPTION("All elements must be Buffers or objects with a 'buffer' property.");
+        }
+
+        image.length = node::Buffer::Length(image.buffer);
+        image.data = (unsigned char*)node::Buffer::Data(image.buffer);
+        baton->images.push_back(image);
+    }
+    baton->request.data = baton;
+    uv_queue_work(uv_default_loop(), &baton->request, Work_Blend, Work_AfterBlend);
 
     return scope.Close(Undefined());
 }
@@ -156,7 +169,7 @@ inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned lo
 void Work_Blend(uv_work_t* req) {
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
-    int total = baton->buffers.size();
+    int total = baton->images.size();
     int size = 0;
     unsigned int* images[total];
     for (int i = 0; i < total; i++) images[i] = NULL;
@@ -166,8 +179,8 @@ void Work_Blend(uv_work_t* req) {
     bool alpha = true;
 
     // Iterate from the last to first image.
-    ImageBuffers::reverse_iterator image = baton->buffers.rbegin();
-    ImageBuffers::reverse_iterator end = baton->buffers.rend();
+    Images::reverse_iterator image = baton->images.rbegin();
+    Images::reverse_iterator end = baton->images.rend();
     for (int index = total - 1; image != end; image++, index--) {
         ImageReader* layer = ImageReader::create(image->data, image->length);
 

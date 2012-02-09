@@ -15,13 +15,13 @@
 
 typedef v8::Persistent<v8::Object> PersistentObject;
 
-struct ImageBuffer {
+struct Image {
     PersistentObject buffer;
     unsigned char *data;
     size_t length;
 };
 
-typedef std::vector<ImageBuffer> ImageBuffers;
+typedef std::vector<Image> Images;
 
 enum BlendFormat {
     BLEND_FORMAT_PNG,
@@ -46,7 +46,7 @@ void Work_AfterBlend(uv_work_t* req);
 struct BlendBaton {
     uv_work_t request;
     v8::Persistent<v8::Function> callback;
-    ImageBuffers buffers;
+    Images images;
 
     bool error;
     std::string message;
@@ -69,7 +69,7 @@ struct BlendBaton {
     ~BlendBaton() {
         uv_unref(uv_default_loop());
 
-        for (ImageBuffers::iterator cur = buffers.begin(); cur != buffers.end(); cur++) {
+        for (Images::iterator cur = images.begin(); cur != images.end(); cur++) {
             cur->buffer.Dispose();
         }
 

@@ -30,7 +30,7 @@ describe('invalid arguments', function() {
     it('should throw if the first argument contains bogus elements', function() {
         assert.throws(function() {
             blend([1, 2, 3], function(err) {});
-        }, /All elements must be Buffers/);
+        }, /All elements must be Buffers or objects with a 'buffer' property/);
     });
 
     it('should not allow unknown formats', function() {
