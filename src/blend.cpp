@@ -101,16 +101,27 @@ Handle<Value> Blend(const Arguments& args) {
     BlendBaton* baton = new BlendBaton(callback, format, quality, reencode);
     for (uint32_t i = 0; i < length; i++) {
         Image image;
-        if (Buffer::HasInstance(images->Get(i))) {
-            image.buffer = Persistent<Object>::New(images->Get(i)->ToObject());
-        } else {
-            delete baton;
-            return TYPE_EXCEPTION("All elements must be Buffers or objects with a 'buffer' property.");
+        Local<Value> buffer = images->Get(i);
+        if (Buffer::HasInstance(buffer)) {
+            image.buffer = Persistent<Object>::New(buffer->ToObject());
+        } else if (buffer->IsObject()) {
+            Local<Object> props = buffer->ToObject();
+            if (props->Has(String::NewSymbol("buffer"))) {
+                Local<Value> buffer = props->Get(String::NewSymbol("buffer"));
+                if (Buffer::HasInstance(buffer)) {
+                    image.buffer = Persistent<Object>::New(buffer->ToObject());
+                }
+            }
         }
 
-        image.length = node::Buffer::Length(image.buffer);
-        image.data = (unsigned char*)node::Buffer::Data(image.buffer);
-        baton->images.push_back(image);
+        if (image.buffer.IsEmpty()) {
+            delete baton;
+            return TYPE_EXCEPTION("All elements must be Buffers or objects with a 'buffer' property.");
+        } else {
+            image.length = node::Buffer::Length(image.buffer);
+            image.data = (unsigned char*)node::Buffer::Data(image.buffer);
+            baton->images.push_back(image);
+        }
     }
     baton->request.data = baton;
     uv_queue_work(uv_default_loop(), &baton->request, Work_Blend, Work_AfterBlend);
