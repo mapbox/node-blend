@@ -208,10 +208,6 @@ void Work_Blend(uv_work_t* req) {
                 memcpy(baton->result, image->data, image->dataLength);
                 break;
             }
-        } else if (layer->width != width || layer->height != height) {
-            baton->error = true;
-            baton->message = "Image dimensions don't match";
-            break;
         }
 
         images[size] = (unsigned int*)layer->decode();
