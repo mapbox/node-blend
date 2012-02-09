@@ -18,7 +18,10 @@ typedef v8::Persistent<v8::Object> PersistentObject;
 struct Image {
     PersistentObject buffer;
     unsigned char *data;
-    size_t length;
+    size_t dataLength;
+
+    unsigned int *rgba;
+    size_t rgbaLength;
 };
 
 typedef std::vector<Image> Images;
@@ -59,7 +62,7 @@ struct BlendBaton {
     int height;
 
     unsigned char* result;
-    size_t length;
+    size_t resultLength;
     size_t max;
 
     BlendBaton() :
@@ -70,7 +73,7 @@ struct BlendBaton {
         width(0),
         height(0),
         result(NULL),
-        length(0),
+        resultLength(0),
         max(0)
     {
         this->request.data = this;

@@ -5,8 +5,8 @@
 void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {
     BlendBaton* baton = (BlendBaton*)png_get_io_ptr(png_ptr);
 
-    if (baton->result == NULL || baton->max < baton->length + length) {
-        int increase = baton->length ? 4 * length : 32768;
+    if (baton->result == NULL || baton->max < baton->resultLength + length) {
+        int increase = baton->resultLength ? 4 * length : 32768;
         baton->result = (unsigned char*)realloc(baton->result, baton->max + increase);
         baton->max += increase;
     }
@@ -14,8 +14,8 @@ void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {
     // TODO: implement OOM check
     assert(baton->result);
 
-    memcpy(baton->result + baton->length, data, length);
-    baton->length += length;
+    memcpy(baton->result + baton->resultLength, data, length);
+    baton->resultLength += length;
 }
 
 void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
@@ -373,7 +373,7 @@ void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
         jpeg_destroy_compress(&info);
 
         baton->result = result;
-        baton->length = length;
+        baton->resultLength = length;
     } catch (std::exception& e) {
         // Error message was set by JPEG_errorMessage.
         baton->error = true;

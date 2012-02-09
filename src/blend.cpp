@@ -111,8 +111,8 @@ Handle<Value> Blend(const Arguments& args) {
             return TYPE_EXCEPTION("All elements must be Buffers or objects with a 'buffer' property.");
         }
 
-        image.length = node::Buffer::Length(image.buffer);
         image.data = (unsigned char*)node::Buffer::Data(image.buffer);
+        image.dataLength = node::Buffer::Length(image.buffer);
         baton->images.push_back(image);
     }
 
@@ -187,7 +187,7 @@ void Work_Blend(uv_work_t* req) {
     Images::reverse_iterator image = baton->images.rbegin();
     Images::reverse_iterator end = baton->images.rend();
     for (int index = total - 1; image != end; image++, index--) {
-        std::auto_ptr<ImageReader> layer(ImageReader::create(image->data, image->length));
+        std::auto_ptr<ImageReader> layer(ImageReader::create(image->data, image->dataLength));
 
         // Skip invalid images.
         if (layer.get() == NULL || layer->width == 0 || layer->height == 0) {
@@ -202,10 +202,10 @@ void Work_Blend(uv_work_t* req) {
 
             // Short-circuit when we're not reencoding.
             if (!layer->alpha && !baton->reencode) {
-                baton->result = (unsigned char *)malloc(image->length);
-                baton->length = image->length;
+                baton->result = (unsigned char *)malloc(image->dataLength);
+                baton->resultLength = image->dataLength;
                 assert(baton->result);
-                memcpy(baton->result, image->data, image->length);
+                memcpy(baton->result, image->data, image->dataLength);
                 break;
             }
         } else if (layer->width != width || layer->height != height) {
@@ -279,7 +279,7 @@ void Work_AfterBlend(uv_work_t* req) {
         // In the success case, node's Buffer implementation frees the result pointer for us.
         Local<Value> argv[] = {
             Local<Value>::New(Null()),
-            Local<Value>::New(Buffer::New((char*)baton->result, baton->length, freeBuffer, NULL)->handle_),
+            Local<Value>::New(Buffer::New((char*)baton->result, baton->resultLength, freeBuffer, NULL)->handle_),
             Local<Value>::New(warnings)
         };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
