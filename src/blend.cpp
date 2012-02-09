@@ -123,7 +123,7 @@ Handle<Value> Blend(const Arguments& args) {
             baton->images.push_back(image);
         }
     }
-    baton->request.data = baton;
+
     uv_queue_work(uv_default_loop(), &baton->request, Work_Blend, Work_AfterBlend);
 
     return scope.Close(Undefined());
