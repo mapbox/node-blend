@@ -73,9 +73,7 @@ struct BlendBaton {
             cur->buffer.Dispose();
         }
 
-        if (result) {
-            free(result);
-        }
+        // Note: THe result buffer is freed by the node Buffer's free callback
 
         callback.Dispose();
     }

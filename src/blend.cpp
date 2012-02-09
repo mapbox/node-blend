@@ -245,6 +245,11 @@ void Work_Blend(uv_work_t* req) {
     }
 }
 
+void freeBuffer(char *data, void *hint) {
+    free(data);
+    data = NULL;
+}
+
 void Work_AfterBlend(uv_work_t* req) {
     HandleScope scope;
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
@@ -257,9 +262,10 @@ void Work_AfterBlend(uv_work_t* req) {
             warnings->Set(i, String::New((*pos).c_str()));
         }
 
+        // In the success case, node's Buffer implementation frees the result pointer for us.
         Local<Value> argv[] = {
             Local<Value>::New(Null()),
-            Local<Value>::New(Buffer::New((char*)baton->result, baton->length)->handle_),
+            Local<Value>::New(Buffer::New((char*)baton->result, baton->length, freeBuffer, NULL)->handle_),
             Local<Value>::New(warnings)
         };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
@@ -267,6 +273,13 @@ void Work_AfterBlend(uv_work_t* req) {
         Local<Value> argv[] = {
             Local<Value>::New(Exception::Error(String::New(baton->message.c_str())))
         };
+
+        // In the error case, we have to manually free this.
+        if (baton->result) {
+            free(baton->result);
+            baton->result = NULL;
+        }
+
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 1, argv);
     }
 
