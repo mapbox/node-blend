@@ -32,7 +32,6 @@ describe('PNG blending', function() {
 
     it('should return the correctly blended file for two valid images', function(done) {
         blend([ images[2], images[3] ], function(err, data) {
-            fs.writeFileSync('./out.png', data);
             if (err) return done(err);
             utilities.imageEqualsFile(data, 'test/fixture/results/2.png', done);
         });

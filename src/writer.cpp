@@ -23,7 +23,7 @@ void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
 
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8,
+    png_set_IHDR(png_ptr, info_ptr, baton->width, baton->height, 8,
                  alpha ? PNG_COLOR_TYPE_RGB_ALPHA : PNG_COLOR_TYPE_RGB,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                  PNG_FILTER_TYPE_DEFAULT);

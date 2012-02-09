@@ -10,10 +10,9 @@ using namespace node;
 
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
-
     std::auto_ptr<BlendBaton> baton(new BlendBaton());
-    Local<Object> options;
 
+    Local<Object> options;
     if (args.Length() == 0 || !args[0]->IsArray()) {
         return TYPE_EXCEPTION("First argument must be an array of Buffers.");
     } else if (args.Length() == 1) {
@@ -38,10 +37,7 @@ Handle<Value> Blend(const Arguments& args) {
 
     // Validate options
     if (!options.IsEmpty()) {
-        Local<Value> quality_val = options->Get(String::NewSymbol("quality"));
-        if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
-            baton->quality = quality_val->Int32Value();
-        }
+        baton->quality = options->Get(String::NewSymbol("quality"))->Int32Value();
 
         Local<Value> format_val = options->Get(String::NewSymbol("format"));
         if (!format_val.IsEmpty() && format_val->BooleanValue()) {
@@ -62,6 +58,8 @@ Handle<Value> Blend(const Arguments& args) {
         }
 
         baton->reencode = options->Get(String::NewSymbol("reencode"))->BooleanValue();
+        baton->width = options->Get(String::NewSymbol("width"))->Int32Value();
+        baton->height = options->Get(String::NewSymbol("height"))->Int32Value();
     }
 
     Local<Array> images = Local<Array>::Cast(args[0]);
@@ -125,23 +123,25 @@ Handle<Value> Blend(const Arguments& args) {
 
 inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned long width, unsigned long height) {
     size_t length = width * height;
+    unsigned int *target = images[0];
     for (long px = length - 1; px >= 0; px--) {
         // Starting pixel
-        unsigned int abgr = images[0][px];
+        unsigned int abgr = target[px];
 
         // Skip if topmost pixel is opaque.
         if (abgr >= 0xFF000000) continue;
 
         for (int i = 1; i < size; i++) {
-            if (images[i][px] <= 0x00FFFFFF) {
+            unsigned int *source = images[i];
+            if (source[px] <= 0x00FFFFFF) {
                 // Lower pixel is fully transparent.
                 continue;
             } else if (abgr <= 0x00FFFFFF) {
                 // Upper pixel is fully transparent.
-                abgr = images[i][px];
+                abgr = source[px];
             } else {
                 // Both pixels have transparency.
-                unsigned int rgba0 = images[i][px];
+                unsigned int rgba0 = source[px];
                 unsigned int rgba1 = abgr;
 
                 // From http://trac.mapnik.org/browser/trunk/include/mapnik/graphics.hpp#L337
@@ -167,7 +167,7 @@ inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned lo
         }
 
         // Merge pixel back.
-        images[0][px] = abgr;
+        target[px] = abgr;
     }
 }
 
@@ -251,6 +251,9 @@ void Work_Blend(uv_work_t* req) {
         if (size > 1) {
             Blend_CompositeTopDown(images, size, width, height);
         }
+
+        if (baton->width == 0) baton->width = width;
+        if (baton->height == 0) baton->height = height;
 
         Blend_Encode((unsigned char*)images[0], baton, width, height, alpha);
     }

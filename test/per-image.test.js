@@ -26,3 +26,12 @@ describe('per-image settings', function() {
         });
     });
 });
+
+describe('cropping', function() {
+    it('should crop the image to width and height', function(done) {
+        blend(images, { width: 128, height: 128 }, function(err, data) {
+            if (err) return done(err);
+            utilities.imageEqualsFile(data, 'test/fixture/results/20.png', done);
+        });
+    });
+});

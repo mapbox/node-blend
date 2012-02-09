@@ -52,9 +52,11 @@ struct BlendBaton {
     std::string message;
     std::vector<std::string> warnings;
 
-    BlendFormat format;
     int quality;
+    BlendFormat format;
     bool reencode;
+    int width;
+    int height;
 
     unsigned char* result;
     size_t length;
@@ -62,9 +64,11 @@ struct BlendBaton {
 
     BlendBaton() :
         error(false),
-        format(BLEND_FORMAT_PNG),
         quality(0),
+        format(BLEND_FORMAT_PNG),
         reencode(false),
+        width(0),
+        height(0),
         result(NULL),
         length(0),
         max(0)
