@@ -60,18 +60,17 @@ struct BlendBaton {
     size_t length;
     size_t max;
 
-    BlendBaton(v8::Handle<v8::Function> cb, BlendFormat fmt, int qlt, bool reenc) :
+    BlendBaton() :
         error(false),
-        format(fmt),
-        quality(qlt),
-        reencode(reenc),
+        format(BLEND_FORMAT_PNG),
+        quality(0),
+        reencode(false),
         result(NULL),
         length(0),
         max(0)
     {
         this->request.data = this;
         uv_ref(uv_default_loop());
-        callback = v8::Persistent<v8::Function>::New(cb);
     }
 
     ~BlendBaton() {

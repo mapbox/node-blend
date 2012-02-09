@@ -3,6 +3,7 @@
 #include "writer.hpp"
 
 #include <sstream>
+#include <memory>
 
 using namespace v8;
 using namespace node;
@@ -10,7 +11,7 @@ using namespace node;
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
 
-    Local<Function> callback;
+    std::auto_ptr<BlendBaton> baton(new BlendBaton());
     Local<Object> options;
 
     if (args.Length() == 0 || !args[0]->IsArray()) {
@@ -22,7 +23,7 @@ Handle<Value> Blend(const Arguments& args) {
         if (!args[1]->IsFunction()) {
             return TYPE_EXCEPTION("Second argument must be a function.");
         }
-        callback = Local<Function>::Cast(args[1]);
+        baton->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
     } else if (args.Length() >= 3) {
         if (!args[1]->IsObject()) {
             return TYPE_EXCEPTION("Second argument must be a an options object.");
@@ -32,32 +33,27 @@ Handle<Value> Blend(const Arguments& args) {
         if (!args[2]->IsFunction()) {
             return TYPE_EXCEPTION("Third argument must be a function.");
         }
-        callback = Local<Function>::Cast(args[2]);
+        baton->callback = Persistent<Function>::New(Local<Function>::Cast(args[2]));
     }
-
-
-    BlendFormat format = BLEND_FORMAT_PNG;
-    int quality = 0;
-    bool reencode = false;
 
     // Validate options
     if (!options.IsEmpty()) {
         Local<Value> quality_val = options->Get(String::NewSymbol("quality"));
         if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
-            quality = quality_val->Int32Value();
+            baton->quality = quality_val->Int32Value();
         }
 
         Local<Value> format_val = options->Get(String::NewSymbol("format"));
         if (!format_val.IsEmpty() && format_val->BooleanValue()) {
             if (strcmp(*String::AsciiValue(format_val), "jpeg") == 0 ||
                     strcmp(*String::AsciiValue(format_val), "jpg") == 0) {
-                format = BLEND_FORMAT_JPEG;
-                if (quality == 0) quality = 80;
-                else if (quality < 0 || quality > 100) {
+                baton->format = BLEND_FORMAT_JPEG;
+                if (baton->quality == 0) baton->quality = 80;
+                else if (baton->quality < 0 || baton->quality > 100) {
                     return TYPE_EXCEPTION("JPEG quality is range 0-100.");
                 }
             } else if (strcmp(*String::AsciiValue(format_val), "png") == 0) {
-                if (quality == 1 || quality > 256) {
+                if (baton->quality == 1 || baton->quality > 256) {
                     return TYPE_EXCEPTION("PNG images must be quantized between 2 and 256 colors.");
                 }
             } else {
@@ -65,14 +61,14 @@ Handle<Value> Blend(const Arguments& args) {
             }
         }
 
-        reencode = options->Get(String::NewSymbol("reencode"))->BooleanValue();
+        baton->reencode = options->Get(String::NewSymbol("reencode"))->BooleanValue();
     }
 
     Local<Array> images = Local<Array>::Cast(args[0]);
     uint32_t length = images->Length();
     if (length < 1) {
         return TYPE_EXCEPTION("First argument must contain at least one Buffer.");
-    } else if (length == 1 && !reencode) {
+    } else if (length == 1 && !baton->reencode) {
         Local<Value> buffer = images->Get(0);
         if (Buffer::HasInstance(buffer)) {
             // Directly pass through buffer if it's the only one.
@@ -80,7 +76,7 @@ Handle<Value> Blend(const Arguments& args) {
                 Local<Value>::New(Null()),
                 buffer
             };
-            TRY_CATCH_CALL(Context::GetCurrent()->Global(), callback, 2, argv);
+            TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 2, argv);
             return scope.Close(Undefined());
         } else {
             // Check whether the argument is a complex image with offsets etc.
@@ -98,7 +94,6 @@ Handle<Value> Blend(const Arguments& args) {
         }
     }
 
-    BlendBaton* baton = new BlendBaton(callback, format, quality, reencode);
     for (uint32_t i = 0; i < length; i++) {
         Image image;
         Local<Value> buffer = images->Get(i);
@@ -115,16 +110,15 @@ Handle<Value> Blend(const Arguments& args) {
         }
 
         if (image.buffer.IsEmpty()) {
-            delete baton;
             return TYPE_EXCEPTION("All elements must be Buffers or objects with a 'buffer' property.");
-        } else {
-            image.length = node::Buffer::Length(image.buffer);
-            image.data = (unsigned char*)node::Buffer::Data(image.buffer);
-            baton->images.push_back(image);
         }
+
+        image.length = node::Buffer::Length(image.buffer);
+        image.data = (unsigned char*)node::Buffer::Data(image.buffer);
+        baton->images.push_back(image);
     }
 
-    uv_queue_work(uv_default_loop(), &baton->request, Work_Blend, Work_AfterBlend);
+    uv_queue_work(uv_default_loop(), &baton.release()->request, Work_Blend, Work_AfterBlend);
 
     return scope.Close(Undefined());
 }
