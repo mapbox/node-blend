@@ -3,9 +3,31 @@
 
 #include <sstream>
 #include <memory>
+#include <cstring>
 
 using namespace v8;
 using namespace node;
+
+
+unsigned int hexToUInt32Color(char *hex) {
+    if (!hex) return 0;
+    if (hex[0] == '#') hex++;
+    int len = strlen(hex);
+    if (len != 6 && len != 8) return 0;
+
+    unsigned int color = 0;
+    std::stringstream ss;
+    ss << std::hex << hex;
+    ss >> color;
+
+    if (len == 8) {
+        // Circular shift to get from RGBA to ARGB.
+        return (color << 24) | ((color & 0xFF00) << 8) | ((color & 0xFF0000) >> 8) | ((color & 0xFF000000) >> 24);
+    } else {
+        return 0xFF000000 | ((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16);
+    }
+}
+
 
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
@@ -59,11 +81,21 @@ Handle<Value> Blend(const Arguments& args) {
         baton->reencode = options->Get(String::NewSymbol("reencode"))->BooleanValue();
         baton->width = options->Get(String::NewSymbol("width"))->Int32Value();
         baton->height = options->Get(String::NewSymbol("height"))->Int32Value();
+
+        Local<Value> matte_val = options->Get(String::NewSymbol("matte"));
+        if (!matte_val.IsEmpty() && matte_val->IsString()) {
+            baton->matte = hexToUInt32Color(*String::AsciiValue(matte_val->ToString()));
+
+            // Make sure we're reencoding in the case of single alpha PNGs
+            if (baton->matte && !baton->reencode) {
+                baton->reencode = true;
+            }
+        }
     }
 
     Local<Array> images = Local<Array>::Cast(args[0]);
     uint32_t length = images->Length();
-    if (length < 1) {
+    if (length < 1 && !baton->reencode) {
         return TYPE_EXCEPTION("First argument must contain at least one Buffer.");
     } else if (length == 1 && !baton->reencode) {
         Local<Value> buffer = images->Get(0);
@@ -104,6 +136,8 @@ Handle<Value> Blend(const Arguments& args) {
                     image->buffer = Persistent<Object>::New(buffer->ToObject());
                 }
             }
+            image->x = props->Get(String::NewSymbol("x"))->Int32Value();
+            image->y = props->Get(String::NewSymbol("y"))->Int32Value();
         }
 
         if (image->buffer.IsEmpty()) {
@@ -306,6 +340,13 @@ void Work_Blend(uv_work_t* req) {
 
     // Now blend images.
     int pixels = baton->width * baton->height;
+    if (pixels == 0) {
+        std::ostringstream msg;
+        msg << "Image dimensions " << baton->width << "x" << baton->height << " are invalid";
+        baton->message = msg.str();
+        return;
+    }
+
     unsigned int *target = (unsigned int *)malloc(sizeof(unsigned int) * pixels);
     if (!target) {
         baton->message = "Memory allocation failed";

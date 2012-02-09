@@ -12,16 +12,21 @@ exports.imageEqualsFile = function(buffer, file, callback) {
         error += data.toString();
     });
     compare.on('exit', function(code, signal) {
-        if (code) return callback(new Error(error || 'Exited with code ' + code));
-        else if (error.trim() === 'inf') callback(null);
-        else {
-            var similarity = parseFloat(error.trim());
+        if (!code && error.trim() === 'inf') {
+            callback(null);
+        } else {
             var type = path.extname(file);
             var result = path.join(path.dirname(file), path.basename(file, type) + '.result' + type);
             fs.writeFileSync(result, buffer);
-            var err = new Error('Images not equal (' + similarity + '): ' + result);
-            err.similarity = similarity;
-            callback(err);
+
+            if (code) {
+                callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
+            } else {
+                var similarity = parseFloat(error.trim());
+                var err = new Error('Images not equal (' + similarity + '): ' + result);
+                err.similarity = similarity;
+                callback(err);
+            }
         }
     });
 
