@@ -1,6 +1,6 @@
-#include "blend.h"
-#include "reader.h"
-#include "writer.h"
+#include "blend.hpp"
+#include "reader.hpp"
+#include "writer.hpp"
 
 #include <sstream>
 

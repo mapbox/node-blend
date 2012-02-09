@@ -1,5 +1,5 @@
-#include "writer.h"
-#include "octree.h"
+#include "writer.hpp"
+#include "octree.hpp"
 
 
 void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {

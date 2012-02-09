@@ -11,7 +11,7 @@
 
 #include <string>
 
-#include "blend.h"
+#include "blend.hpp"
 
 struct JPEGErrorManager {
     jpeg_error_mgr pub;
