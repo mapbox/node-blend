@@ -1,5 +1,4 @@
 #include "blend.hpp"
-#include "reader.hpp"
 #include "writer.hpp"
 
 #include <sstream>
@@ -93,26 +92,26 @@ Handle<Value> Blend(const Arguments& args) {
     }
 
     for (uint32_t i = 0; i < length; i++) {
-        Image image;
+        ImagePtr image(new Image());
         Local<Value> buffer = images->Get(i);
         if (Buffer::HasInstance(buffer)) {
-            image.buffer = Persistent<Object>::New(buffer->ToObject());
+            image->buffer = Persistent<Object>::New(buffer->ToObject());
         } else if (buffer->IsObject()) {
             Local<Object> props = buffer->ToObject();
             if (props->Has(String::NewSymbol("buffer"))) {
                 Local<Value> buffer = props->Get(String::NewSymbol("buffer"));
                 if (Buffer::HasInstance(buffer)) {
-                    image.buffer = Persistent<Object>::New(buffer->ToObject());
+                    image->buffer = Persistent<Object>::New(buffer->ToObject());
                 }
             }
         }
 
-        if (image.buffer.IsEmpty()) {
+        if (image->buffer.IsEmpty()) {
             return TYPE_EXCEPTION("All elements must be Buffers or objects with a 'buffer' property.");
         }
 
-        image.data = (unsigned char*)node::Buffer::Data(image.buffer);
-        image.dataLength = node::Buffer::Length(image.buffer);
+        image->data = (unsigned char*)node::Buffer::Data(image->buffer);
+        image->dataLength = node::Buffer::Length(image->buffer);
         baton->images.push_back(image);
     }
 
@@ -121,53 +120,109 @@ Handle<Value> Blend(const Arguments& args) {
     return scope.Close(Undefined());
 }
 
-inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned long width, unsigned long height) {
-    size_t length = width * height;
-    unsigned int *target = images[0];
-    for (long px = length - 1; px >= 0; px--) {
-        // Starting pixel
-        unsigned int abgr = target[px];
+// inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned long width, unsigned long height) {
+//     size_t length = width * height;
+//     unsigned int *target = images[0];
+//     for (long px = length - 1; px >= 0; px--) {
+//         // Starting pixel
+//         unsigned int abgr = target[px];
 
-        // Skip if topmost pixel is opaque.
-        if (abgr >= 0xFF000000) continue;
+//         // Skip if topmost pixel is opaque.
+//         if (abgr >= 0xFF000000) continue;
 
-        for (int i = 1; i < size; i++) {
-            unsigned int *source = images[i];
-            if (source[px] <= 0x00FFFFFF) {
-                // Lower pixel is fully transparent.
-                continue;
-            } else if (abgr <= 0x00FFFFFF) {
-                // Upper pixel is fully transparent.
-                abgr = source[px];
-            } else {
-                // Both pixels have transparency.
-                unsigned int rgba0 = source[px];
-                unsigned int rgba1 = abgr;
+//         for (int i = 1; i < size; i++) {
+//             unsigned int *source = images[i];
+//             if (source[px] <= 0x00FFFFFF) {
+//                 // Lower pixel is fully transparent.
+//                 continue;
+//             } else if (abgr <= 0x00FFFFFF) {
+//                 // Upper pixel is fully transparent.
+//                 abgr = source[px];
+//             } else {
+//                 // Both pixels have transparency.
+//                 unsigned int rgba0 = source[px];
+//                 unsigned int rgba1 = abgr;
 
-                // From http://trac.mapnik.org/browser/trunk/include/mapnik/graphics.hpp#L337
-                unsigned a1 = (rgba1 >> 24) & 0xff;
-                unsigned r1 = rgba1 & 0xff;
-                unsigned g1 = (rgba1 >> 8) & 0xff;
-                unsigned b1 = (rgba1 >> 16) & 0xff;
+//                 // From http://trac.mapnik.org/browser/trunk/include/mapnik/graphics.hpp#L337
+//                 unsigned a1 = (rgba1 >> 24) & 0xff;
+//                 unsigned r1 = rgba1 & 0xff;
+//                 unsigned g1 = (rgba1 >> 8) & 0xff;
+//                 unsigned b1 = (rgba1 >> 16) & 0xff;
 
-                unsigned a0 = (rgba0 >> 24) & 0xff;
-                unsigned r0 = (rgba0 & 0xff) * a0;
-                unsigned g0 = ((rgba0 >> 8) & 0xff) * a0;
-                unsigned b0 = ((rgba0 >> 16) & 0xff) * a0;
+//                 unsigned a0 = (rgba0 >> 24) & 0xff;
+//                 unsigned r0 = (rgba0 & 0xff) * a0;
+//                 unsigned g0 = ((rgba0 >> 8) & 0xff) * a0;
+//                 unsigned b0 = ((rgba0 >> 16) & 0xff) * a0;
 
-                a0 = ((a1 + a0) << 8) - a0 * a1;
+//                 a0 = ((a1 + a0) << 8) - a0 * a1;
 
-                r0 = ((((r1 << 8) - r0) * a1 + (r0 << 8)) / a0);
-                g0 = ((((g1 << 8) - g0) * a1 + (g0 << 8)) / a0);
-                b0 = ((((b1 << 8) - b0) * a1 + (b0 << 8)) / a0);
-                a0 = a0 >> 8;
-                abgr = (a0 << 24) | (b0 << 16) | (g0 << 8) | (r0);
-            }
-            if (abgr >= 0xFF000000) break;
+//                 r0 = ((((r1 << 8) - r0) * a1 + (r0 << 8)) / a0);
+//                 g0 = ((((g1 << 8) - g0) * a1 + (g0 << 8)) / a0);
+//                 b0 = ((((b1 << 8) - b0) * a1 + (b0 << 8)) / a0);
+//                 a0 = a0 >> 8;
+//                 abgr = (a0 << 24) | (b0 << 16) | (g0 << 8) | (r0);
+//             }
+//             if (abgr >= 0xFF000000) break;
+//         }
+
+//         // Merge pixel back.
+//         target[px] = abgr;
+//     }
+// }
+
+inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
+    if (source <= 0x00FFFFFF) {
+        // Top pixel is fully transparent.
+        // <do nothing>
+    } else if (source >= 0xFF000000 || target <= 0x00FFFFFF) {
+        // Top pixel is fully opaque or bottom pixel is fully transparent.
+        target = source;
+    } else {
+        // Both pixels have transparency.
+        // From http://trac.mapnik.org/browser/trunk/include/mapnik/graphics.hpp#L337
+        unsigned int a1 = (source >> 24) & 0xff;
+        unsigned int r1 = source & 0xff;
+        unsigned int g1 = (source >> 8) & 0xff;
+        unsigned int b1 = (source >> 16) & 0xff;
+
+        unsigned int a0 = (target >> 24) & 0xff;
+        unsigned int r0 = (target & 0xff) * a0;
+        unsigned int g0 = ((target >> 8) & 0xff) * a0;
+        unsigned int b0 = ((target >> 16) & 0xff) * a0;
+
+        a0 = ((a1 + a0) << 8) - a0 * a1;
+        r0 = ((((r1 << 8) - r0) * a1 + (r0 << 8)) / a0);
+        g0 = ((((g1 << 8) - g0) * a1 + (g0 << 8)) / a0);
+        b0 = ((((b1 << 8) - b0) * a1 + (b0 << 8)) / a0);
+        a0 = a0 >> 8;
+        target = (a0 << 24) | (b0 << 16) | (g0 << 8) | (r0);
+    }
+}
+
+
+void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
+    unsigned int *source = image->reader->surface;
+
+    int sourceX = std::max(0, -image->x);
+    int sourceY = std::max(0, -image->y);
+    int sourcePos = sourceY * image->width + sourceX;
+
+    int width = image->width - sourceX - std::max(0, image->x + image->width - baton->width);
+    int height = image->height - sourceY - std::max(0, image->y + image->height - baton->height);
+
+    int targetX = std::max(0, image->x);
+    int targetY = std::max(0, image->y);
+    int targetPos = targetY * baton->width + targetX;
+
+    // fprintf(stderr, "sourcePos: %d, targetPos: %d, width: %d, height: %d\n", sourcePos, targetPos, width, height);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            Blend_CompositePixel(target[targetPos + x], source[sourcePos + x]);
         }
 
-        // Merge pixel back.
-        target[px] = abgr;
+        sourcePos += image->width;
+        targetPos += baton->width;
     }
 }
 
@@ -175,47 +230,55 @@ void Work_Blend(uv_work_t* req) {
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
     int total = baton->images.size();
-    int size = 0;
-    unsigned int* images[total];
-    for (int i = 0; i < total; i++) images[i] = NULL;
-
-    unsigned long width = 0;
-    unsigned long height = 0;
     bool alpha = true;
+    int size = 0;
 
-    // Iterate from the last to first image.
-    Images::reverse_iterator image = baton->images.rbegin();
-    Images::reverse_iterator end = baton->images.rend();
-    for (int index = total - 1; image != end; image++, index--) {
+    // Iterate from the last to first image because we potentially don't have
+    // to decode all images if there's an opaque one.
+    Images::reverse_iterator rit = baton->images.rbegin();
+    Images::reverse_iterator rend = baton->images.rend();
+    for (int index = total - 1; rit != rend; rit++, index--) {
+        // If an image that is higher than the current is opaque, stop alltogether.
+        if (!alpha) break;
+
+        Image *image = &**rit;
         std::auto_ptr<ImageReader> layer(ImageReader::create(image->data, image->dataLength));
 
-        // Skip invalid images.
+        // Error out on invalid images.
         if (layer.get() == NULL || layer->width == 0 || layer->height == 0) {
-            baton->error = true;
             baton->message = layer->message;
-            break;
+            return;
         }
 
-        if (size == 0) {
-            width = layer->width;
-            height = layer->height;
+        int visibleWidth = (int)layer->width + image->x;
+        int visibleHeight = (int)layer->height + image->y;
 
-            // Short-circuit when we're not reencoding.
-            if (!layer->alpha && !baton->reencode) {
-                baton->result = (unsigned char *)malloc(image->dataLength);
-                baton->resultLength = image->dataLength;
-                assert(baton->result);
-                memcpy(baton->result, image->data, image->dataLength);
-                break;
-            }
+        // The first image that is in the viewport sets the width/height, if not user supplied.
+        if (baton->width <= 0) baton->width = visibleWidth;
+        if (baton->height <= 0) baton->height = visibleHeight;
+
+        // Skip images that are outside of the viewport.
+        if (visibleWidth <= 0 || visibleHeight <= 0 || image->x >= baton->width || image->y >= baton->height) {
+            // Remove this layer from the list of layers we consider blending.
+            continue;
         }
 
-        images[size] = (unsigned int*)layer->decode();
-        if (images[size] == NULL) {
+        // Short-circuit when we're not reencoding.
+        if (size == 0 && !layer->alpha && !baton->reencode &&
+            image->x == 0 && image->y == 0 &&
+            (int)layer->width == baton->width && (int)layer->height == baton->height)
+        {
+            baton->result = (unsigned char *)malloc(image->dataLength);
+            assert(baton->result);
+            memcpy(baton->result, image->data, image->dataLength);
+            baton->resultLength = image->dataLength;
+            return;
+        }
+
+        if (!layer->decode()) {
             // Decoding failed.
-            baton->error = true;
             baton->message = layer->message;
-            break;
+            return;
         }
         else if (layer->warnings.size()) {
             std::vector<std::string>::iterator pos = layer->warnings.begin();
@@ -227,32 +290,46 @@ void Work_Blend(uv_work_t* req) {
             }
         }
 
-        size++;
-
-        if (!layer->alpha) {
+        bool coversWidth = image->x <= 0 && visibleWidth >= baton->width;
+        bool coversHeight = image->y <= 0 && visibleHeight >= baton->height;
+        if (!layer->alpha && coversWidth && coversHeight) {
             // Skip decoding more layers.
             alpha = false;
-            break;
+        }
+
+        // Convenience aliases.
+        image->width = layer->width;
+        image->height = layer->height;
+        image->reader = layer;
+        size++;
+    }
+
+    // Now blend images.
+    int pixels = baton->width * baton->height;
+    unsigned int *target = (unsigned int *)malloc(sizeof(unsigned int) * pixels);
+    if (!target) {
+        baton->message = "Memory allocation failed";
+        return;
+    }
+
+    // When we don't actually have transparent pixels, we don't need to set
+    // the matte.
+    if (alpha) {
+        for (int i = 0; i < pixels; i++) {
+            target[i] = baton->matte;
         }
     }
 
-    if (!baton->error && size) {
-        if (size > 1) {
-            Blend_CompositeTopDown(images, size, width, height);
-        }
-
-        if (baton->width == 0) baton->width = width;
-        if (baton->height == 0) baton->height = height;
-
-        Blend_Encode((unsigned char*)images[0], baton, width, height, alpha);
-    }
-
-    for (int i = 0; i < size; i++) {
-        if (images[i] != NULL) {
-            free(images[i]);
-            images[i] = NULL;
+    for (Images::iterator it = baton->images.begin(); it != baton->images.end(); it++) {
+        Image *image = &**it;
+        if (image->reader.get()) {
+            Blend_Composite(target, baton, image);
         }
     }
+
+    Blend_Encode((unsigned char*)target, baton, alpha);
+    free(target);
+    target = NULL;
 }
 
 void freeBuffer(char *data, void *hint) {
@@ -264,7 +341,7 @@ void Work_AfterBlend(uv_work_t* req) {
     HandleScope scope;
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
-    if (!baton->error && baton->result) {
+    if (!baton->message.length() && baton->result) {
         Local<Array> warnings = Array::New();
         std::vector<std::string>::iterator pos = baton->warnings.begin();
         std::vector<std::string>::iterator end = baton->warnings.end();
@@ -290,6 +367,7 @@ void Work_AfterBlend(uv_work_t* req) {
             baton->result = NULL;
         }
 
+        assert(!baton->callback.IsEmpty());
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 1, argv);
     }
 

@@ -46,7 +46,7 @@ void PNGImageReader::warningHandler(png_structp png, png_const_charp error_msg) 
     reader->warnings.push_back(error_msg);
 }
 
-unsigned char* PNGImageReader::decode() {
+bool PNGImageReader::decode() {
     try {
         // From http://trac.mapnik.org/browser/trunk/src/png_reader.cpp
         if (color == PNG_COLOR_TYPE_PALETTE)
@@ -77,12 +77,12 @@ unsigned char* PNGImageReader::decode() {
         unsigned int rowbytes = png_get_rowbytes(png, info);
         assert(width * 4 == rowbytes);
 
-        unsigned char* surface = (unsigned char*)malloc(width * height * 4);
+        surface = (unsigned int*)malloc(width * height * 4);
         assert(surface);
 
         png_bytep row_pointers[height];
         for (unsigned i = 0; i < height; i++) {
-            row_pointers[i] = (unsigned char*)(surface + (i * rowbytes));
+            row_pointers[i] = (unsigned char *)surface + (i * rowbytes);
         }
 
         // Read image data
@@ -90,12 +90,15 @@ unsigned char* PNGImageReader::decode() {
 
         png_read_end(png, NULL);
 
-        return surface;
+        return true;
     } catch (std::exception& e) {
         png_destroy_read_struct(&png, &info, NULL);
         width = 0;
         height = 0;
-        return NULL;
+        if (surface) free(surface);
+        surface = NULL;
+
+        return false;
     }
 }
 
@@ -143,12 +146,12 @@ void JPEGImageReader::errorMessage(j_common_ptr cinfo) {
     error->reader->message = buffer;
 }
 
-unsigned char* JPEGImageReader::decode() {
+bool JPEGImageReader::decode() {
     if (info.data_precision != 8) return NULL;
     if (info.num_components != 3 && info.num_components != 1) return NULL;
 
     size_t length = width * height * 4;
-    unsigned char* surface = (unsigned char*)malloc(length);
+    surface = (unsigned int*)malloc(length);
     if (surface == NULL) {
         message = "Insufficient memory";
         jpeg_destroy_decompress(&info);
@@ -162,7 +165,7 @@ unsigned char* JPEGImageReader::decode() {
 
         unsigned char* row_pointers[height];
         for (unsigned i = 0; i < height; i++) {
-            row_pointers[i] = (unsigned char*)(surface + (i * width * 4));
+            row_pointers[i] = (unsigned char*)surface + (i * width * 4);
         }
 
         size_t offset = 0;
@@ -172,7 +175,7 @@ unsigned char* JPEGImageReader::decode() {
 
         // Convert to RGBA.
         for (unsigned i = 0; i < height; i++) {
-            unsigned char* destination = surface + i * width * 4;
+            unsigned char* destination = (unsigned char*)surface + i * width * 4;
             unsigned int* image = (unsigned int*)destination;
             for (int j = width - 1, k = j * 3; j >= 0; k = --j * 3) {
                 image[j] = 0xFF << 24 | destination[k + 2] << 16 |
@@ -182,11 +185,12 @@ unsigned char* JPEGImageReader::decode() {
 
         jpeg_finish_decompress(&info);
 
-        return surface;
+        return true;
     } catch (std::exception& e) {
         jpeg_destroy_decompress(&info);
-        free(surface);
-        return NULL;
+        if (surface) free(surface);
+        surface = NULL;
+        return false;
     }
 }
 

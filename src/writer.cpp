@@ -18,8 +18,7 @@ void Blend_WritePNG(png_structp png_ptr, png_bytep data, png_size_t length) {
     baton->resultLength += length;
 }
 
-void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
-                     unsigned long width, unsigned long height, bool alpha) {
+void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton, bool alpha) {
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
 
@@ -31,9 +30,9 @@ void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton,
     png_set_compression_level(png_ptr, Z_BEST_SPEED);
     png_set_compression_buffer_size(png_ptr, 32768);
 
-    png_bytep row_pointers[height];
-    for (unsigned i = 0; i < height; i++) {
-        row_pointers[i] = (png_bytep)(source + (4 * width * i));
+    png_bytep row_pointers[baton->height];
+    for (int i = 0; i < baton->height; i++) {
+        row_pointers[i] = (png_bytep)(source + (4 * baton->width * i));
     }
     png_set_rows(png_ptr, info_ptr, (png_bytepp)&row_pointers);
     png_set_filter(png_ptr, PNG_FILTER_TYPE_BASE, PNG_FILTER_NONE);
@@ -88,7 +87,6 @@ void Blend_ReduceColors(unsigned const char* source, unsigned long width,
 
 
 void Blend_EncodePNG(unsigned const char* image, BlendBaton* baton,
-                     unsigned long width, unsigned long height,
                      unsigned color_depth, std::vector<rgb> & palette,
                      std::vector<unsigned> &alpha) {
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -97,7 +95,7 @@ void Blend_EncodePNG(unsigned const char* image, BlendBaton* baton,
     png_set_compression_level(png_ptr, Z_BEST_SPEED);
     png_set_compression_buffer_size(png_ptr, 32768);
 
-    png_set_IHDR(png_ptr, info_ptr, width, height, color_depth,
+    png_set_IHDR(png_ptr, info_ptr, baton->width, baton->height, color_depth,
                  PNG_COLOR_TYPE_PALETTE,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                  PNG_FILTER_TYPE_DEFAULT);
@@ -125,17 +123,15 @@ void Blend_EncodePNG(unsigned const char* image, BlendBaton* baton,
     png_write_info(png_ptr, info_ptr);
     png_set_packing(png_ptr);
 
-    for (unsigned int y = 0; y < height; y++) {
-        png_write_row(png_ptr, (png_bytep)(image + (width * y)));
+    for (int y = 0; y < baton->height; y++) {
+        png_write_row(png_ptr, (png_bytep)(image + (baton->width * y)));
     }
     png_write_end(png_ptr, info_ptr);
 
     png_destroy_write_struct(&png_ptr, &info_ptr);
 }
 
-void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
-                           unsigned long width, unsigned long height,
-                           bool alpha) {
+void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton, bool alpha) {
     unsigned max_colors = baton->quality;
     int trans_mode = alpha ? 4 : 0;
 
@@ -148,9 +144,9 @@ void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
     for (int i = 0; i < 256; i++) {
         alphaHist[i] = 0;
     }
-    for (unsigned y = 0; y < height; ++y) {
-        for (unsigned x = 0; x < width; ++x) {
-            unsigned val = source[y * 4 * width + 4 * x + 3]; // Get alpha value of that pixel.
+    for (int y = 0; y < baton->height; ++y) {
+        for (int x = 0; x < baton->width; ++x) {
+            unsigned int val = source[y * 4 * baton->width + 4 * x + 3]; // Get alpha value of that pixel.
             if (trans_mode == 0) {
                 val = 255;
             }
@@ -161,7 +157,7 @@ void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
             }
         }
     }
-    meanAlpha /= width * height;
+    meanAlpha /= baton->width * baton->height;
 
     // transparency ranges division points
     unsigned limits[MAX_OCTREE_LEVELS + 1];
@@ -205,7 +201,7 @@ void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
         }
     }
 
-    unsigned divCoef = width * height - cols[0];
+    unsigned divCoef = baton->width * baton->height - cols[0];
     if (divCoef == 0) {
         divCoef = 1;
     }
@@ -242,9 +238,9 @@ void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
         trees[j].setMaxColors(cols[j]);
     }
 
-    for (unsigned y = 0; y < height; ++y) {
-        unsigned const char* row = &(source[y * 4 * width]);
-        for (unsigned x = 0; x < width; ++x) {
+    for (int y = 0; y < baton->height; ++y) {
+        unsigned const char* row = &(source[y * 4 * baton->width]);
+        for (int x = 0; x < baton->width; ++x) {
             unsigned const char* val = &(row[x * 4]);
 
             // insert to proper tree based on alpha range
@@ -290,7 +286,7 @@ void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
     }
 
 
-    unsigned char* reduced_image = (unsigned char*)malloc(width * height);
+    unsigned char* reduced_image = (unsigned char*)malloc(baton->width * baton->height);
 
     int depth = 1;
     if (palette.size() > 16) {
@@ -303,16 +299,16 @@ void Blend_EncodePNGOctree(unsigned const char* source, BlendBaton* baton,
 
     if (palette.size() == 1) {
         // 1 color image ->  write 1-bit color depth PNG
-        memset(reduced_image, 0, width * height);
+        memset(reduced_image, 0, baton->width * baton->height);
         if (meanAlpha < 255 && cols[0] == 0) {
             alphaTable.resize(1);
             alphaTable[0] = meanAlpha;
         }
     } else {
-        Blend_ReduceColors(source, width, height, reduced_image, trees, limits, TRANSPARENCY_LEVELS, alphaTable);
+        Blend_ReduceColors(source, baton->width, baton->height, reduced_image, trees, limits, TRANSPARENCY_LEVELS, alphaTable);
     }
 
-    Blend_EncodePNG(reduced_image, baton, width, height, depth, palette, alphaTable);
+    Blend_EncodePNG(reduced_image, baton, depth, palette, alphaTable);
     free(reduced_image);
 }
 
@@ -329,8 +325,7 @@ void JPEG_errorMessage(j_common_ptr cinfo) {
     err->baton->message = buffer;
 }
 
-void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
-                      unsigned long width, unsigned long height, bool alpha) {
+void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton, bool alpha) {
     jpeg_compress_struct info;
     JPEGErrorManager err;
 
@@ -345,8 +340,8 @@ void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
         unsigned long length = 0;
         jpeg_mem_dest(&info, &result, &length);
 
-        info.image_width = width;
-        info.image_height = height;
+        info.image_width = baton->width;
+        info.image_height = baton->height;
         info.input_components = 3;
         info.in_color_space = JCS_RGB;
         jpeg_set_defaults(&info);
@@ -354,11 +349,11 @@ void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
 
         jpeg_start_compress(&info, TRUE);
 
-        unsigned char* row = (unsigned char*)malloc(width * 3);
+        unsigned char* row = (unsigned char*)malloc(baton->width * 3);
         while (info.next_scanline < info.image_height) {
             // Get rid of the alpha channel.
-            const unsigned char* scanline = source + info.next_scanline * width * 4;
-            for (int i = 0, j = 0, end = width * 3; i < end; j++) {
+            const unsigned char* scanline = source + info.next_scanline * baton->width * 4;
+            for (int i = 0, j = 0, end = baton->width * 3; i < end; j++) {
                 row[i++] = scanline[j++];
                 row[i++] = scanline[j++];
                 row[i++] = scanline[j++];
@@ -376,7 +371,6 @@ void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
         baton->resultLength = length;
     } catch (std::exception& e) {
         // Error message was set by JPEG_errorMessage.
-        baton->error = true;
         if (baton->result) {
             free(baton->result);
             baton->result = NULL;
@@ -385,13 +379,12 @@ void Blend_EncodeJPEG(unsigned const char* source, BlendBaton* baton,
     }
 }
 
-void Blend_Encode(unsigned const char* source, BlendBaton* baton,
-                  unsigned long width, unsigned long height, bool alpha) {
+void Blend_Encode(unsigned const char* source, BlendBaton* baton, bool alpha) {
     if (baton->format == BLEND_FORMAT_JPEG) {
-        Blend_EncodeJPEG(source, baton, width, height, alpha);
+        Blend_EncodeJPEG(source, baton, alpha);
     } else if (baton->format == BLEND_FORMAT_PNG && baton->quality > 0) {
-        Blend_EncodePNGOctree(source, baton, width, height, alpha);
+        Blend_EncodePNGOctree(source, baton, alpha);
     } else {
-        Blend_EncodePNG(source, baton, width, height, alpha);
+        Blend_EncodePNG(source, baton, alpha);
     }
 }

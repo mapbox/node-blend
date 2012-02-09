@@ -4,7 +4,8 @@ var path = require('path');
 var spawn = require('child_process').spawn;
 
 exports.imageEqualsFile = function(buffer, file, callback) {
-    var compare = spawn('compare', ['-metric', 'PSNR', '-', path.resolve(file), '/dev/null' ]);
+    file = path.resolve(file);
+    var compare = spawn('compare', ['-metric', 'PSNR', '-', file, '/dev/null' ]);
 
     var error = '';
     compare.stderr.on('data', function(data) {
@@ -15,7 +16,10 @@ exports.imageEqualsFile = function(buffer, file, callback) {
         else if (error.trim() === 'inf') callback(null);
         else {
             var similarity = parseFloat(error.trim());
-            var err = new Error('Images not equal (' + similarity + ')');
+            var type = path.extname(file);
+            var result = path.join(path.dirname(file), path.basename(file, type) + '.result' + type);
+            fs.writeFileSync(result, buffer);
+            var err = new Error('Images not equal (' + similarity + '): ' + result);
             err.similarity = similarity;
             callback(err);
         }
