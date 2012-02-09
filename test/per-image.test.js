@@ -52,6 +52,17 @@ describe('per-image settings', function() {
         });
     });
 
+    it('should error out when the resulting image doesn\'t have a width or height', function(done) {
+        blend([
+            { buffer: images[1], x: -300, y: -300 },
+            { buffer: images[0], x: -300, y: -300 }
+        ], function(err) {
+            assert.ok(err);
+            assert.equal(err.message, 'Image dimensions 0x0 are invalid');
+            done();
+        });
+    });
+
     it('should only render the RGB matte', function(done) {
         blend([
             { buffer: images[1], x: 200, y: 10 },
@@ -91,13 +102,9 @@ describe('per-image settings', function() {
         });
     });
 
-    it('should return an error if there are no image dimensions', function(done) {
-        blend([], {
-            matte: '12345678',
-        }, function(err, data) {
-            assert.ok(err);
-            assert.equal(err.message, "Image dimensions 0x0 are invalid");
-            done();
-        });
+    it('should not require image dimensions if there are no images', function() {
+        assert.throws(function() {
+            blend([], { matte: '12345678' }, function() {});
+        }, /Without buffers, you have to specify width and height/);
     });
 });

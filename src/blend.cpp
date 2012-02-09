@@ -123,6 +123,14 @@ Handle<Value> Blend(const Arguments& args) {
         }
     }
 
+    if (!(length >= 1 || (baton->width > 0 & baton->height > 0))) {
+        return TYPE_EXCEPTION("Without buffers, you have to specify width and height.");
+    }
+
+    if (baton->width < 0 || baton->height < 0) {
+        return TYPE_EXCEPTION("Image dimensions must be greater than 0.");
+    }
+
     for (uint32_t i = 0; i < length; i++) {
         ImagePtr image(new Image());
         Local<Value> buffer = images->Get(i);
@@ -248,8 +256,6 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     int targetY = std::max(0, image->y);
     int targetPos = targetY * baton->width + targetX;
 
-    // fprintf(stderr, "sourcePos: %d, targetPos: %d, width: %d, height: %d\n", sourcePos, targetPos, width, height);
-
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             Blend_CompositePixel(target[targetPos + x], source[sourcePos + x]);
@@ -288,8 +294,8 @@ void Work_Blend(uv_work_t* req) {
         int visibleHeight = (int)layer->height + image->y;
 
         // The first image that is in the viewport sets the width/height, if not user supplied.
-        if (baton->width <= 0) baton->width = visibleWidth;
-        if (baton->height <= 0) baton->height = visibleHeight;
+        if (baton->width <= 0) baton->width = std::max(0, visibleWidth);
+        if (baton->height <= 0) baton->height = std::max(0, visibleHeight);
 
         // Skip images that are outside of the viewport.
         if (visibleWidth <= 0 || visibleHeight <= 0 || image->x >= baton->width || image->y >= baton->height) {
@@ -340,7 +346,7 @@ void Work_Blend(uv_work_t* req) {
 
     // Now blend images.
     int pixels = baton->width * baton->height;
-    if (pixels == 0) {
+    if (pixels <= 0) {
         std::ostringstream msg;
         msg << "Image dimensions " << baton->width << "x" << baton->height << " are invalid";
         baton->message = msg.str();

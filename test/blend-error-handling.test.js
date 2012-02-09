@@ -68,6 +68,18 @@ describe('invalid arguments', function() {
         }, /JPEG quality is range 0-100/);
     });
 
+    it('should not allow negative image dimensions', function() {
+        assert.throws(function() {
+            blend(images, { width: -20 }, function() {});
+        }, /Image dimensions must be greater than 0/);
+    });
+
+    it('should not allow negative image dimensions', function() {
+        assert.throws(function() {
+            blend(images, { height: -20 }, function() {});
+        }, /Image dimensions must be greater than 0/);
+    });
+
     it('should not allow empty objects', function() {
         assert.throws(function() {
             blend([
