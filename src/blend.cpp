@@ -187,13 +187,12 @@ void Work_Blend(uv_work_t* req) {
     Images::reverse_iterator image = baton->images.rbegin();
     Images::reverse_iterator end = baton->images.rend();
     for (int index = total - 1; image != end; image++, index--) {
-        ImageReader* layer = ImageReader::create(image->data, image->length);
+        std::auto_ptr<ImageReader> layer(ImageReader::create(image->data, image->length));
 
         // Skip invalid images.
-        if (layer == NULL || layer->width == 0 || layer->height == 0) {
+        if (layer.get() == NULL || layer->width == 0 || layer->height == 0) {
             baton->error = true;
             baton->message = layer->message;
-            delete layer;
             break;
         }
 
@@ -207,13 +206,11 @@ void Work_Blend(uv_work_t* req) {
                 baton->length = image->length;
                 assert(baton->result);
                 memcpy(baton->result, image->data, image->length);
-                delete layer;
                 break;
             }
         } else if (layer->width != width || layer->height != height) {
             baton->error = true;
             baton->message = "Image dimensions don't match";
-            delete layer;
             break;
         }
 
@@ -222,7 +219,6 @@ void Work_Blend(uv_work_t* req) {
             // Decoding failed.
             baton->error = true;
             baton->message = layer->message;
-            delete layer;
             break;
         }
         else if (layer->warnings.size()) {
@@ -240,11 +236,8 @@ void Work_Blend(uv_work_t* req) {
         if (!layer->alpha) {
             // Skip decoding more layers.
             alpha = false;
-            delete layer;
             break;
         }
-
-        delete layer;
     }
 
     if (!baton->error && size) {
