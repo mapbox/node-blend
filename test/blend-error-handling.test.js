@@ -67,6 +67,24 @@ describe('invalid arguments', function() {
             }, function() {});
         }, /JPEG quality is range 0-100/);
     });
+
+    it('should not allow empty objects', function() {
+        assert.throws(function() {
+            blend([
+                { buffer: images[1] },
+                { }
+            ], function() {});
+        }, /All elements must be Buffers or objects with a 'buffer' property/);
+    });
+
+    it('should not allow objects that don\'t have a Buffer', function() {
+        assert.throws(function() {
+            blend([
+                { buffer: images[1] },
+                { buffer: false }
+            ], function() {});
+        }, /All elements must be Buffers or objects with a 'buffer' property/);
+    });
 });
 
 describe('invalid images', function() {
