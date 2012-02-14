@@ -3,8 +3,9 @@ build:
 
 clean:
 	node-waf clean
+	@rm -rf ./lib/blend.node ./build
 
 test: build
-	@NODE_PATH=./lib:$NODE_PATH expresso test/*.test.js
+	mocha -R spec
 
 .PHONY: build clean test
