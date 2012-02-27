@@ -27,7 +27,7 @@ void Blend_EncodePNG(unsigned const char* source, BlendBaton* baton, bool alpha)
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                  PNG_FILTER_TYPE_DEFAULT);
 
-    png_set_compression_level(png_ptr, Z_BEST_SPEED);
+    png_set_compression_level(png_ptr, baton->compression);
     png_set_compression_buffer_size(png_ptr, 32768);
 
     png_bytep row_pointers[baton->height];
@@ -92,7 +92,7 @@ void Blend_EncodePNG(unsigned const char* image, BlendBaton* baton,
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
 
-    png_set_compression_level(png_ptr, Z_BEST_SPEED);
+    png_set_compression_level(png_ptr, baton->compression);
     png_set_compression_buffer_size(png_ptr, 32768);
 
     png_set_IHDR(png_ptr, info_ptr, baton->width, baton->height, color_depth,

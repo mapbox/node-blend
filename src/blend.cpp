@@ -90,6 +90,12 @@ Handle<Value> Blend(const Arguments& args) {
                 baton->reencode = true;
             }
         }
+
+        baton->compression = options->Get(String::NewSymbol("compression"))->Int32Value();
+        if (baton->compression <= 0) baton->compression = Z_DEFAULT_COMPRESSION;
+        if (baton->compression > Z_BEST_COMPRESSION) {
+            return TYPE_EXCEPTION("Compression level must be between 1 and 9.");
+        }
     }
 
     Local<Array> images = Local<Array>::Cast(args[0]);

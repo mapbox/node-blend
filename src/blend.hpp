@@ -86,6 +86,7 @@ struct BlendBaton {
     int width;
     int height;
     unsigned int matte;
+    int compression;
 
     unsigned char* result;
     size_t resultLength;
@@ -98,6 +99,7 @@ struct BlendBaton {
         width(0),
         height(0),
         matte(0),
+        compression(Z_DEFAULT_COMPRESSION),
         result(NULL),
         resultLength(0),
         max(0)
