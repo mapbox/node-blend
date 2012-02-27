@@ -102,11 +102,11 @@ struct BlendBaton {
         resultLength(0),
         max(0)
     {
-#if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0
+#if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
+        ev_ref(EV_DEFAULT_UC);
+#else
         this->request.data = this;
         uv_ref(uv_default_loop());
-#else
-        ev_unref(EV_DEFAULT_UC);
 #endif
     }
 
@@ -115,13 +115,13 @@ struct BlendBaton {
             (*cur)->buffer.Dispose();
         }
 
-#if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0
-        uv_ref(uv_default_loop());
-#else
+#if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
         ev_unref(EV_DEFAULT_UC);
+#else
+        uv_unref(uv_default_loop());
 #endif
 
-        // Note: THe result buffer is freed by the node Buffer's free callback
+        // Note: The result buffer is freed by the node Buffer's free callback
 
         callback.Dispose();
     }
