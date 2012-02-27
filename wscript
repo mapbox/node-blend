@@ -183,7 +183,7 @@ def build(bld):
   obj.cxxflags = ["-O3", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-mfpmath=sse", "-march=core2",
         "-funroll-loops", "-fomit-frame-pointer"]
   obj.target = TARGET
-  obj.source = ["src/reader.cpp", "src/writer.cpp", "src/blend.cpp"]
+  obj.source = ["src/reader.cpp", "src/writer.cpp", "src/blend.cpp", "src/palette.cpp"]
   obj.uselib = ["PNG","JPEG"]
 
 def shutdown():

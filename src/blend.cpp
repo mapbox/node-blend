@@ -1,5 +1,6 @@
 #include "blend.hpp"
 #include "writer.hpp"
+#include "palette.hpp"
 
 #include <sstream>
 #include <memory>
@@ -381,6 +382,7 @@ WORKER_BEGIN(Work_AfterBlend) {
 
 extern "C" void init(Handle<Object> target) {
     NODE_SET_METHOD(target, "blend", Blend);
+    Palette::Initialize(target);
 
     target->Set(
         String::NewSymbol("libpng"),
