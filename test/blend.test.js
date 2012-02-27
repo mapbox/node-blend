@@ -118,4 +118,14 @@ describe('JPEG writing', function() {
             utilities.imageEqualsFile(data, 'test/fixture/results/5.png', done);
         });
     });
+
+    it('should blend weird PNGs', function(done) {
+        blend([
+            fs.readFileSync('test/fixture/105-2.png'),
+            fs.readFileSync('test/fixture/105-1.png')
+        ], function(err, data) {
+            if (err) return done(err);
+            utilities.imageEqualsFile(data, 'test/fixture/results/105.png', done);
+        });
+    });
 });
