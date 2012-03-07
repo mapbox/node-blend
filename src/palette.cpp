@@ -29,6 +29,7 @@
 #include <vector>
 #include <iomanip>
 #include <sstream>
+#include <algorithm>
 
 
 using namespace v8;
