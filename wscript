@@ -10,10 +10,27 @@ built = 'build/Release/%s' % TARGET_FILE
 builtV4 = 'build/default/%s' % TARGET_FILE
 dest = 'lib/%s' % TARGET_FILE
 
+
+test_prog = '''
+#include "stdio.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "%s"
+#ifdef __cplusplus
+}
+#endif
+
+int main() {
+    return 0;
+}
+'''
+
+
 jpeg_inc_name = 'jpeglib.h'
-min_jpeg_version = 8
-
-test_program = '''
+jpeg_search_paths = ['/usr', '/usr/local']
+jpeg_min_version = 8
+jpeg_test_version = '''
 #include "stdio.h"
 #ifdef __cplusplus
 extern "C" {
@@ -23,176 +40,140 @@ extern "C" {
 }
 #endif
 
-int
-main() {
+int main() {
+#if JPEG_LIB_VERSION < 80
+    #error "JPEG_LIB_VERSION must be greater than or equal to 80"
+#else
     return 0;
+#endif
 }
 '''
 
-jpeg_test_prog = '''
-#include "stdio.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "%s"
-#ifdef __cplusplus
-}
-#endif
-
-int
-main() {
-    #if JPEG_LIB_VERSION < 80
-     #error "JPEG_LIB_VERSION must be greater than or equal to 80"
-    #else
-    return 0;
-    #endif
-}
-'''
-jpeg_test_version = jpeg_test_prog % jpeg_inc_name
-
-
-jpeg_search_paths = ['/usr','/usr/local']
 
 png_inc_name = 'png.h'
-png_test_prog = test_program  % png_inc_name
-
-png_search_paths = ['/usr','/usr/local']
-
+png_search_paths = ['/usr', '/usr/local']
 if Options.platform == 'darwin':
-   # x11 has png headers (not jpeg)
-   png_search_paths.append('/usr/X11')
+    # X11 has png headers (not jpeg)
+    png_search_paths.insert(0, '/usr/X11')
+
 
 def set_options(opt):
-  opt.tool_options("compiler_cxx")
-  opt.tool_options('misc')
-  opt.add_option( '--with-jpeg'
-                , action='store'
-                , default=None
-                , help='Directory prefix containing jpeg "lib" and "include" files'
-                , dest='jpeg_dir'
-                )
+    opt.tool_options("compiler_cxx")
+    opt.tool_options('misc')
+    opt.add_option('--with-jpeg',
+        action='store',
+        default=None,
+        help='Directory prefix containing jpeg "lib" and "include" files',
+        dest='jpeg_dir'
+    )
 
-  opt.add_option( '--with-png'
-                , action='store'
-                , default=None
-                , help='Directory prefix containing png "lib" and "include" files'
-                , dest='png_dir'
-                )
+    opt.add_option('--with-png',
+        action='store',
+        default=None,
+        help='Directory prefix containing png "lib" and "include" files',
+        dest='png_dir'
+    )
 
-def _build_paths(conf,prefix):
-    if not os.path.exists(prefix):
-        _conf_exit(conf,'configure path of %s not found' % prefix)
-    norm_path = os.path.normpath(os.path.realpath(prefix))
-    if norm_path.endswith('lib') or norm_path.endswith('include'):
-        norm_path = os.path.dirname(norm_path)
-    return os.path.join('%s' % norm_path,'lib'),os.path.join('%s' % norm_path,'include')
-
-def _conf_exit(conf,msg):
+def _conf_exit(conf, msg):
     conf.fatal('\n\n' + msg + '\n...check the build/config.log for details')
-    
-def configure(conf):
-  conf.check_tool("compiler_cxx")
-  conf.check_tool("node_addon")
-  
-  o = Options.options
- 
-  # jpeg checks
-  if o.jpeg_dir:
-      lib, inc = _build_paths(conf,o.jpeg_dir)
-      header = os.path.join(inc,jpeg_inc_name)
 
-      if conf.check_cxx(lib='jpeg',
-                fragment=jpeg_test_prog % header,
+def _check_jpeg(conf, path):
+    norm_path = os.path.normpath(os.path.realpath(path))
+    lib = os.path.join(norm_path, 'lib')
+    inc = os.path.join(norm_path, 'include')
+    header = os.path.join(inc, jpeg_inc_name)
+    if conf.check(
+            lib='jpeg',
+            fragment=test_prog % header,
+            uselib_store='JPEG',
+            libpath=lib,
+            includes=inc,
+            msg='Checking for libjpeg at %s' % norm_path):
+        # confirm adequate version
+        header = os.path.join(inc, jpeg_inc_name)
+        if conf.check(
+                lib='jpeg',
                 uselib_store='JPEG',
+                fragment=jpeg_test_version % header,
                 libpath=lib,
-                msg='Checking for libjpeg at %s' % header,
-                includes=inc):
-          Utils.pprint('GREEN', 'Sweet, found viable jpeg dependency at: %s ' % o.jpeg_dir)
-      else:
-          _conf_exit(conf,'jpeg libs/headers not found at %s' % o.jpeg_dir)
-  else:
-      # attempt to autoconfigure
-      found = False
-      found_lib = '/usr'
-      found_inc = '/usr'
-      for p in jpeg_search_paths:
-          lib = os.path.join(p,'lib')
-          inc = os.path.join(p,'include')
-          header = os.path.join(inc,jpeg_inc_name)
-          if os.path.exists(header):
-              lib = os.path.join(p,'lib')
-              if conf.check(lib='jpeg',
-                        fragment=jpeg_test_prog % header,
-                        uselib_store='JPEG',
-                        libpath=lib,
-                        msg='Checking for libjpeg at %s' % header,
-                        includes=inc):
-                  found = True
-                  found_lib = lib
-                  found_inc = inc
-                  break
-      
-      if not found:
-          _conf_exit(conf,'jpeg not found: searched %s \nuse --with-jpeg to point to the location of your jpeg libs and headers' % jpeg_search_paths)
-      else:
-          # confirm adequite version
-          if not conf.check(lib='jpeg',
-                    uselib_store='JPEG',
-                    fragment=jpeg_test_version,
-                    libpath=found_lib,
-                    msg='Checking for libjpeg version >= %s' % min_jpeg_version,
-                    includes=found_inc):
-              _conf_exit(conf,'jpeg version >= 8 not found (upgrade to http://www.ijg.org/files/jpegsrc.v8c.tar.gz)')
-          conf.env.append_value("LINKFLAGS", '-L%s' % found_lib)
-          conf.env.append_value("CXXFLAGS", '-I%s' % found_inc)
-  # png checks
-  if o.png_dir:
-      lib, include = _build_paths(conf,o.png_dir)
+                includes=inc,
+                msg='Checking for libjpeg version >= %s' % jpeg_min_version
+            ):
+            return True
+        else:
+            _conf_exit(conf, 'jpeg version >= 8 not found (upgrade to http://www.ijg.org/files/jpegsrc.v8d.tar.gz)')
 
-      if conf.check_cxx(lib='png',
-                fragment=png_test_prog,
-                uselib_store='PNG',
-                libpath=lib,
-                msg='Checking for libpng at %s' % lib,
-                includes=include):
-          Utils.pprint('GREEN', 'Sweet, found viable jpeg dependency at: %s ' % o.png_dir)
-      else:
-          _conf_exit(conf,'png libs/headers not found at %s' % o.png_dir)
-  else:
-      # attempt to autoconfigure
-      found = False
-      for p in png_search_paths:
-          inc = os.path.join(p,'include')
-          header = os.path.join(inc,png_inc_name)
-          if os.path.exists(header):
-              lib = os.path.join(p,'lib')
-              if conf.check(lib='png',
-                        uselib_store='PNG',
-                        libpath=lib,
-                        msg='Checking for libpng at %s' % lib,
-                        includes=inc):
-                  found = True
-                  break
-      
-      if not found:
-          _conf_exit(conf,'png not found: searched %s \nuse --with-png to point to the location of your png libs and headers' % png_search_paths)
+    return False
+
+def _check_png(conf, path):
+    norm_path = os.path.normpath(os.path.realpath(path))
+    lib = os.path.join(norm_path, 'lib')
+    inc = os.path.join(norm_path, 'include')
+    header = os.path.join(inc, png_inc_name)
+    if conf.check(
+            lib='png',
+            fragment=test_prog % header,
+            uselib_store='PNG',
+            libpath=lib,
+            includes=inc,
+            msg='Checking for libpng at %s' % norm_path):
+        return True
+
+    return False
+
+def configure(conf):
+    conf.check_tool("compiler_cxx")
+    conf.check_tool("node_addon")
+
+    o = Options.options
+
+    # jpeg checks
+    found_jpeg = False
+    if o.jpeg_dir:
+        # manual configuration
+        found_jpeg = _check_jpeg(conf, o.jpeg_dir)
+    else:
+        # automatic configuration
+        for path in jpeg_search_paths:
+            found_jpeg = _check_jpeg(conf, path)
+            if found_jpeg:
+                break
+
+    if not found_jpeg:
+        _conf_exit(conf, 'jpeg not found: searched %s \nuse --with-jpeg to point to the location of your jpeg libs and headers' % jpeg_search_paths)
+
+
+    # png checks
+    found_png = False
+    if o.png_dir:
+        # manual configuration
+        found_png = _check_png(conf, o.png_dir)
+    else:
+        # automatic configuration
+        for path in png_search_paths:
+            found_png = _check_png(conf, path)
+            if found_png:
+                break
+
+    if not found_png:
+        _conf_exit(conf, 'png not found: searched %s \nuse --with-png to point to the location of your png libs and headers' % png_search_paths)
 
 
 def build(bld):
-  obj = bld.new_task_gen("cxx", "shlib", "node_addon")
-  obj.cxxflags = ["-O3", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-mfpmath=sse", "-march=core2",
+    obj = bld.new_task_gen("cxx", "shlib", "node_addon")
+    obj.cxxflags = ["-O3", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-mfpmath=sse", "-march=core2",
         "-funroll-loops", "-fomit-frame-pointer"]
-  obj.target = TARGET
-  obj.source = ["src/reader.cpp", "src/writer.cpp", "src/blend.cpp", "src/palette.cpp"]
-  obj.uselib = ["PNG","JPEG"]
+    obj.target = TARGET
+    obj.source = ["src/reader.cpp", "src/writer.cpp", "src/blend.cpp", "src/palette.cpp"]
+    obj.uselib = ["PNG", "JPEG"]
 
 def shutdown():
-  if Options.commands['clean']:
-    if os.path.exists(TARGET_FILE):
-      unlink(TARGET_FILE)
-  else:
-      if os.path.exists(builtV4):
-          copy(builtV4,dest)
-      if os.path.exists(built):
-          copy(built,dest)
+    if Options.commands['clean']:
+        if os.path.exists(TARGET_FILE):
+            unlink(TARGET_FILE)
+    else:
+        if os.path.exists(builtV4):
+            copy(builtV4, dest)
+        if os.path.exists(built):
+            copy(built, dest)
 
