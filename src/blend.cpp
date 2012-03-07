@@ -129,7 +129,7 @@ Handle<Value> Blend(const Arguments& args) {
         }
     }
 
-    if (!(length >= 1 || (baton->width > 0 & baton->height > 0))) {
+    if (!(length >= 1 || (baton->width > 0 && baton->height > 0))) {
         return TYPE_EXCEPTION("Without buffers, you have to specify width and height.");
     }
 
