@@ -235,11 +235,11 @@ void Blend_Encode(image_data_32 &image, BlendBaton* baton, bool alpha) {
         int trans_mode = -1;
         double gamma = -1;
 
-        if (baton->quality > 0) {
+        if (baton->palette.get() && baton->palette->valid()) {
+            save_as_png8_pal(baton->stream, image, *baton->palette, baton->compression, strategy);
+        } else if (baton->quality > 0) {
             // Paletted PNG.
-            if (baton->palette.get() && baton->palette->valid()) {
-                save_as_png8_pal(baton->stream, image, *baton->palette, baton->compression, strategy);
-            } else if (alpha) {
+            if (alpha) {
                 save_as_png8_hex(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, gamma);
             } else {
                 save_as_png8_oct(baton->stream, image, baton->quality, baton->compression, strategy);
