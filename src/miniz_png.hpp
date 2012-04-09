@@ -119,7 +119,7 @@ private:
         tdefl_status status;
         int stride = image.width() * sizeof(typename T::pixel_type);
 
-        for (int y = 0; y < image.height(); y++) {
+        for (unsigned int y = 0; y < image.height(); y++) {
             // Write filter_type
             status = tdefl_compress_buffer(compressor, &filter_type, 1, TDEFL_NO_FLUSH);
             if (status != TDEFL_STATUS_OKAY) throw new std::runtime_error("failed to compress image");
@@ -173,11 +173,11 @@ private:
     static const mz_uint8 IEND_tpl[];
 };
 
-mz_uint8 PNGWriter::preamble[] = {
+const mz_uint8 PNGWriter::preamble[] = {
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 };
 
-mz_uint8 PNGWriter::IHDR_tpl[] = {
+const mz_uint8 PNGWriter::IHDR_tpl[] = {
     0x00, 0x00, 0x00, 0x0D, // chunk length
     'I', 'H', 'D', 'R',     // "IHDR"
     0x00, 0x00, 0x00, 0x00, // image width (4 bytes)
@@ -189,17 +189,17 @@ mz_uint8 PNGWriter::IHDR_tpl[] = {
     0x00                    // interlace method (1 byte)
 };
 
-mz_uint8 PNGWriter::PLTE_tpl[] = {
+const mz_uint8 PNGWriter::PLTE_tpl[] = {
     0x00, 0x00, 0x00, 0x00, // chunk length
     'P', 'L', 'T', 'E'      // "IDAT"
 };
 
-mz_uint8 PNGWriter::IDAT_tpl[] = {
+const mz_uint8 PNGWriter::IDAT_tpl[] = {
     0x00, 0x00, 0x00, 0x00, // chunk length
     'I', 'D', 'A', 'T'      // "IDAT"
 };
 
-mz_uint8 PNGWriter::IEND_tpl[] = {
+const mz_uint8 PNGWriter::IEND_tpl[] = {
     0x00, 0x00, 0x00, 0x00, // chunk length
     'I', 'E', 'N', 'D'      // "IEND"
 };

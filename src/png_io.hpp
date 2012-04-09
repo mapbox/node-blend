@@ -107,7 +107,7 @@ void save_as_png(T1 & file,
                  PNG_FILTER_TYPE_DEFAULT);
 
     png_bytep row_pointers[image.height()];
-    for (int i = 0; i < image.height(); i++) {
+    for (unsigned int i = 0; i < image.height(); i++) {
         row_pointers[i] = (png_bytep)image.getRow(i);
     }
     png_set_rows(png_ptr, info_ptr, (png_bytepp)&row_pointers);
