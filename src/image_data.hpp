@@ -139,7 +139,7 @@ private:
 };
 
 typedef ImageData<unsigned> image_data_32;
-typedef ImageData<unsigned char>  image_data_8;
+typedef ImageData<unsigned char> image_data_8;
 
 
 #endif // NODE_BLEND_SRC_IMAGE_DATA_HPP

@@ -29,6 +29,7 @@
 #include "octree.hpp"
 #include "hextree.hpp"
 #include "blend.hpp"
+#include "miniz_png.hpp"
 
 // zlib
 #include <zlib.h>
@@ -61,6 +62,13 @@ void save_as_png(T1 & file,
                 int strategy = Z_DEFAULT_STRATEGY,
                 int alpha = false)
 {
+    if (alpha == false) {
+        MiniZ::PNGWriter writer(compression);
+        writer.compress(image);
+        writer.toStream(file);
+        return;
+    }
+
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                 error_ptr,0, 0);
@@ -216,6 +224,13 @@ void save_as_png(T & file, std::vector<rgb> const& palette,
                  int strategy,
                  std::vector<unsigned> const&alpha)
 {
+    if (alpha.size() == 0) {
+        MiniZ::PNGWriter writer(compression);
+        writer.compress(image, palette);
+        writer.toStream(file);
+        return;
+    }
+
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                 error_ptr,0, 0);
