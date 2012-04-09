@@ -15,7 +15,7 @@ describe('reencode', function() {
     it('should reencode as PNG 24 bit', function(done) {
         blend([ images[0] ], { reencode: true, compression: 1 }, function(err, data) {
             if (err) return done(err);
-            assert.ok(data.length > 15000);
+            assert.ok(data.length > 16000);
             utilities.imageEqualsFile(data, 'test/fixture/results/14.png', done);
         });
     });
@@ -23,7 +23,7 @@ describe('reencode', function() {
     it('should reencode as PNG 24 bit with a better compression ratio', function(done) {
         blend([ images[0] ], { reencode: true, compression: 9 }, function(err, data) {
             if (err) return done(err);
-            assert.ok(data.length <= 15000);
+            assert.ok(data.length <= 16000);
             utilities.imageEqualsFile(data, 'test/fixture/results/14.png', done);
         });
     });

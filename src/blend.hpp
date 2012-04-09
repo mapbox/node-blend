@@ -22,6 +22,8 @@
 #include "reader.hpp"
 #include "palette.hpp"
 
+#define NODE_BLEND_USE_MINIZ
+
 
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
     #define WORKER_BEGIN(name)                  int name(eio_req *req)

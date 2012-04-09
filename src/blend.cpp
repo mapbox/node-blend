@@ -226,27 +226,31 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     }
 }
 
-void Blend_Encode(image_data_32 &image, BlendBaton* baton, bool alpha) {
-    if (baton->format == BLEND_FORMAT_JPEG) {
-        save_as_jpeg(baton->stream, baton->quality, image);
-    } else {
-        // Save as PNG.
-        int strategy = Z_DEFAULT_STRATEGY;
-        int trans_mode = -1;
-        double gamma = -1;
-
-        if (baton->palette.get() && baton->palette->valid()) {
-            save_as_png8_pal(baton->stream, image, *baton->palette, baton->compression, strategy);
-        } else if (baton->quality > 0) {
-            // Paletted PNG.
-            if (alpha) {
-                save_as_png8_hex(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, gamma);
-            } else {
-                save_as_png8_oct(baton->stream, image, baton->quality, baton->compression, strategy);
-            }
+void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alpha) {
+    try {
+        if (baton->format == BLEND_FORMAT_JPEG) {
+            save_as_jpeg(baton->stream, baton->quality, image);
         } else {
-            save_as_png(baton->stream, image, baton->compression, strategy, alpha);
+            // Save as PNG.
+            int strategy = Z_DEFAULT_STRATEGY;
+            int trans_mode = -1;
+            double gamma = -1;
+
+            if (baton->palette.get() && baton->palette->valid()) {
+                save_as_png8_pal(baton->stream, image, *baton->palette, baton->compression, strategy);
+            } else if (baton->quality > 0) {
+                // Paletted PNG.
+                if (alpha) {
+                    save_as_png8_hex(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, gamma);
+                } else {
+                    save_as_png8_oct(baton->stream, image, baton->quality, baton->compression, strategy);
+                }
+            } else {
+                save_as_png(baton->stream, image, baton->compression, strategy, alpha);
+            }
         }
+    } catch (const std::exception& ex) {
+        baton->message = ex.what();
     }
 }
 
@@ -343,6 +347,7 @@ WORKER_BEGIN(Work_Blend) {
     // When we don't actually have transparent pixels, we don't need to set
     // the matte.
     if (alpha) {
+        // We can't use memset here because it converts the color to a 1-byte value.
         for (int i = 0; i < pixels; i++) {
             target[i] = baton->matte;
         }

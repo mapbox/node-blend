@@ -62,13 +62,18 @@ void save_as_png(T1 & file,
                 int strategy = Z_DEFAULT_STRATEGY,
                 int alpha = false)
 {
-    if (alpha == false) {
-        MiniZ::PNGWriter writer(compression);
-        writer.compress(image);
-        writer.toStream(file);
-        return;
+#ifdef NODE_BLEND_USE_MINIZ
+    MiniZ::PNGWriter writer(compression);
+    if (alpha) {
+        writer.writeIHDR(image.width(), image.height(), 32);
+        writer.writeIDAT(image);
+    } else {
+        writer.writeIHDR(image.width(), image.height(), 24);
+        writer.writeIDATStripAlpha(image);
     }
-
+    writer.writeIEND();
+    writer.toStream(file);
+#else
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                 error_ptr,0, 0);
@@ -107,12 +112,13 @@ void save_as_png(T1 & file,
                  PNG_FILTER_TYPE_DEFAULT);
 
     png_bytep row_pointers[image.height()];
-    for (unsigned int i = 0; i < image.height(); i++) {
+    for (int i = 0; i < image.height(); i++) {
         row_pointers[i] = (png_bytep)image.getRow(i);
     }
     png_set_rows(png_ptr, info_ptr, (png_bytepp)&row_pointers);
     png_write_png(png_ptr, info_ptr, alpha ? NULL : PNG_TRANSFORM_STRIP_FILLER_AFTER, NULL);
     png_destroy_write_struct(&png_ptr, &info_ptr);
+#endif
 }
 
 template <typename T>
@@ -224,13 +230,17 @@ void save_as_png(T & file, std::vector<rgb> const& palette,
                  int strategy,
                  std::vector<unsigned> const&alpha)
 {
-    if (alpha.size() == 0) {
-        MiniZ::PNGWriter writer(compression);
-        writer.compress(image, palette);
-        writer.toStream(file);
-        return;
-    }
-
+#ifdef NODE_BLEND_USE_MINIZ
+    MiniZ::PNGWriter writer(compression);
+    // image.width()/height() does not reflect the actual image dimensions; it
+    // refers to the quantized scanlines.
+    writer.writeIHDR(width, height, color_depth);
+    writer.writePLTE(palette);
+    writer.writetRNS(alpha);
+    writer.writeIDAT(image);
+    writer.writeIEND();
+    writer.toStream(file);
+#else
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                 error_ptr,0, 0);
@@ -293,6 +303,7 @@ void save_as_png(T & file, std::vector<rgb> const& palette,
 
     png_write_end(png_ptr, info_ptr);
     png_destroy_write_struct(&png_ptr, &info_ptr);
+#endif
 }
 
 template <typename T1,typename T2>
