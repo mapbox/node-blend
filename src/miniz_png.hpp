@@ -179,9 +179,8 @@ public:
         tdefl_status status;
 
         size_t stride = image.width() * 3;
+        size_t i, j;
         mz_uint8 *scanline = (mz_uint8 *)MZ_MALLOC(stride);
-
-        int i, j;
 
         for (unsigned int y = 0; y < image.height(); y++) {
             // Write filter_type
