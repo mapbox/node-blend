@@ -19,10 +19,7 @@
 namespace MiniZ {
 
 // TODO
-// - support fo 1/2/4 bit paletted images (they are currently written as 8-bit images)
 // - support for grayscale images
-// - support for RGB 24-bit images (they are currently written as 32-bit images)
-// - support for alpha paletted images
 
 class PNGWriter {
 
