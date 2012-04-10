@@ -7,7 +7,8 @@ var utilities = require('./support/utilities');
 
 var images = [
     fs.readFileSync('test/fixture/1.png'),
-    fs.readFileSync('test/fixture/2.png')
+    fs.readFileSync('test/fixture/2.png'),
+    fs.readFileSync('test/fixture/pattern.png')
 ];
 
 
@@ -65,6 +66,14 @@ describe('reencode', function() {
             if (err) return done(err);
             assert.ok(data.length > 15000);
             utilities.imageEqualsFile(data, 'test/fixture/results/14.png', done);
+        });
+    });
+
+    it('should reencode an interlaced PNG', function(done) {
+        blend([ images[2] ], { reencode: true }, function(err, data, warnings) {
+            if (err) return done(err);
+            assert.deepEqual(warnings, []);
+            utilities.imageEqualsFile(data, 'test/fixture/results/26.png', done);
         });
     });
 });
