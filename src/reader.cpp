@@ -3,7 +3,7 @@
 #include <exception>
 
 PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
-    ImageReader(src, len), depth(0), color(-1) {
+    ImageReader(src, len), depth(0), color(-1), interlace(PNG_INTERLACE_NONE) {
     // Decode PNG header.
     png = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp)this, errorHandler, warningHandler);
     assert(png);
@@ -13,7 +13,7 @@ PNGImageReader::PNGImageReader(unsigned char* src, size_t len) :
     try {
         png_set_read_fn(png, this, readCallback);
         png_read_info(png, info);
-        png_get_IHDR(png, info, &width, &height, &depth, &color, NULL, NULL, NULL);
+        png_get_IHDR(png, info, &width, &height, &depth, &color, &interlace, NULL, NULL);
         alpha = (color & PNG_COLOR_MASK_ALPHA) || png_get_valid(png, info, PNG_INFO_tRNS);
     } catch(std::exception& e) {
         png_destroy_read_struct(&png, &info, NULL);
@@ -62,6 +62,9 @@ bool PNGImageReader::decode() {
         if (color == PNG_COLOR_TYPE_GRAY ||
                 color == PNG_COLOR_TYPE_GRAY_ALPHA)
             png_set_gray_to_rgb(png);
+
+        if (interlace == PNG_INTERLACE_ADAM7)
+            png_set_interlace_handling(png);
 
         // Always add an alpha channel.
         if (!this->alpha) {

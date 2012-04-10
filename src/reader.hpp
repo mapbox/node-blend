@@ -58,6 +58,7 @@ protected:
 protected:
     int depth;
     int color;
+    int interlace;
     png_structp png;
     png_infop info;
 };

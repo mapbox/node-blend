@@ -24,29 +24,33 @@ function checkSimilarity(similarity, done) {
 
 describe('quantization', function() {
     it('should quantize to 128 colors', function(done) {
-        blend(images, { format: 'png', quality: 128 }, function(err, data) {
+        blend(images, { format: 'png', quality: 128 }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(35, done));
         });
     });
 
     it('should quantize to 64 colors', function(done) {
-        blend(images, { format: 'png', quality: 64 }, function(err, data) {
+        blend(images, { format: 'png', quality: 64 }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(30, done));
         });
     });
 
     it('should quantize to 16 colors', function(done) {
-        blend(images, { format: 'png', quality: 16 }, function(err, data) {
+        blend(images, { format: 'png', quality: 16 }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(24, done));
         });
     });
 
     it('should quantize to 8 colors', function(done) {
-        blend(images, { format: 'png', quality: 16 }, function(err, data) {
+        blend(images, { format: 'png', quality: 16 }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(20, done));
         });
     });
