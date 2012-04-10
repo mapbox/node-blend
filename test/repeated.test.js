@@ -31,8 +31,8 @@ describe('repeated blending', function() {
             }
         });
 
-        server.listen(1337, function() {
-            http.get({ path: '/', port: 1337 }, function(res) {
+        server.listen(38295, function() {
+            http.get({ path: '/', port: 38295 }, function(res) {
                 var received = 0;
                 res.on('data', function(data) { received += data.length; });
                 res.on('end', function() {
