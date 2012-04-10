@@ -19,8 +19,9 @@ describe('per-image settings', function() {
         blend([
             { buffer: images[1] },
             { buffer: images[0] }
-        ], function(err, data) {
+        ], function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             assert.deepEqual(images[0], data);
             done();
         });
@@ -33,8 +34,9 @@ describe('per-image settings', function() {
         ], {
             width: 256,
             height: 256
-        }, function(err, data) {
+        }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/22.png', done);
         });
     });
@@ -46,8 +48,9 @@ describe('per-image settings', function() {
         ], {
             width: 128,
             height: 128
-        }, function(err, data) {
+        }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/23.png', done);
         });
     });
@@ -71,8 +74,9 @@ describe('per-image settings', function() {
             width: 128,
             height: 128,
             matte: 'FF007F',
-        }, function(err, data) {
+        }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/24.png', done);
         });
     });
@@ -85,8 +89,9 @@ describe('per-image settings', function() {
             width: 128,
             height: 128,
             matte: '12345678',
-        }, function(err, data) {
+        }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/25.png', done);
         });
     });
@@ -96,8 +101,9 @@ describe('per-image settings', function() {
             width: 128,
             height: 128,
             matte: '12345678'
-        }, function(err, data) {
+        }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/25.png', done);
         });
     });
@@ -130,8 +136,9 @@ describe('per-image settings', function() {
             width: 700,
             height: 600,
             quality: 64
-        }, function(err, data) {
+        }, function(err, data, warnings) {
             if (err) return done(err);
+            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/stitched.png', done);
         });
     });
