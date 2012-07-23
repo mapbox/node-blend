@@ -108,7 +108,6 @@ struct BlendBaton {
         ev_ref(EV_DEFAULT_UC);
 #else
         this->request.data = this;
-        uv_ref(uv_default_loop());
 #endif
     }
 
@@ -119,10 +118,7 @@ struct BlendBaton {
 
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
         ev_unref(EV_DEFAULT_UC);
-#else
-        uv_unref(uv_default_loop());
 #endif
-
         // Note: The result buffer is freed by the node Buffer's free callback
 
         callback.Dispose();
