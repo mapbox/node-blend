@@ -9,7 +9,7 @@
         "url": "https://github.com/developmentseed/node-blend.git"
     },
     "engines": {
-        "node": ">= 0.4"
+        "node": ">= 0.4 && < 0.9.0"
     },
     "licenses": [{ "type": "BSD" }],
     "devDependencies": {
