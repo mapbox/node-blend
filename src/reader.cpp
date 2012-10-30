@@ -150,15 +150,15 @@ void JPEGImageReader::errorMessage(j_common_ptr cinfo) {
 }
 
 bool JPEGImageReader::decode() {
-    if (info.data_precision != 8) return NULL;
-    if (info.num_components != 3 && info.num_components != 1) return NULL;
+    if (info.data_precision != 8) return false;
+    if (info.num_components != 3 && info.num_components != 1) return false;
 
     size_t length = width * height * 4;
     surface = (unsigned int*)malloc(length);
     if (surface == NULL) {
         message = "Insufficient memory";
         jpeg_destroy_decompress(&info);
-        return NULL;
+        return false;
     }
 
     try {
