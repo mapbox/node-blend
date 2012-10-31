@@ -35,6 +35,7 @@ public:
     ImageData(unsigned width,unsigned height)
         : width_(width),
           height_(height),
+          handle_delete_(true),
           pData_((width!=0 && height!=0)? static_cast<T*>(::operator new(sizeof(T)*width*height)):0)
     {
         if (pData_) std::memset(pData_,0,sizeof(T)*width_*height_);
@@ -43,6 +44,7 @@ public:
     ImageData(unsigned width, unsigned height, T* data)
         : width_(width),
           height_(height),
+          handle_delete_(false),
           pData_(data)
     {
     }
@@ -50,6 +52,7 @@ public:
     ImageData(const ImageData<T>& rhs)
         :width_(rhs.width_),
          height_(rhs.height_),
+         handle_delete_(true),
          pData_((rhs.width_!=0 && rhs.height_!=0)?
                 static_cast<T*>(::operator new(sizeof(T)*rhs.width_*rhs.height_)) :0)
     {
@@ -128,12 +131,13 @@ public:
 
     inline ~ImageData()
     {
-        ::operator delete(pData_),pData_=0;
+        if (handle_delete_) ::operator delete(pData_),pData_=0;
     }
 
 private:
     const unsigned width_;
     const unsigned height_;
+    bool handle_delete_;
     T *pData_;
     ImageData& operator=(const ImageData&);
 };

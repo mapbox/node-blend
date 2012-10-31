@@ -362,7 +362,8 @@ WORKER_BEGIN(Work_Blend) {
 
     image_data_32 image(baton->width, baton->height, (unsigned int*)target);
     Blend_Encode(image, baton, alpha);
-
+    free(target);
+    target = NULL;
     WORKER_END();
 }
 
