@@ -112,11 +112,11 @@ void save_as_png(T1 & file,
                  PNG_FILTER_TYPE_DEFAULT);
 
     png_bytep row_pointers[image.height()];
-    for (int i = 0; i < image.height(); i++) {
+    for (unsigned int i = 0; i < image.height(); i++) {
         row_pointers[i] = (png_bytep)image.getRow(i);
     }
     png_set_rows(png_ptr, info_ptr, (png_bytepp)&row_pointers);
-    png_write_png(png_ptr, info_ptr, alpha ? NULL : PNG_TRANSFORM_STRIP_FILLER_AFTER, NULL);
+    png_write_png(png_ptr, info_ptr, alpha ? PNG_TRANSFORM_IDENTITY : PNG_TRANSFORM_STRIP_FILLER_AFTER, NULL);
     png_destroy_write_struct(&png_ptr, &info_ptr);
 #endif
 }
