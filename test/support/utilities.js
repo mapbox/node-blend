@@ -35,7 +35,7 @@ exports.imageEqualsFile = function(buffer, file, callback) {
                 callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
             } else {
                 var similarity = parseFloat(error.trim());
-                var err = new Error('Images not equal (' + similarity + '): ' + result);
+                var err = new Error('Images not equal (' + similarity + '):\n' + result + '\n'+file);
                 err.similarity = similarity;
                 callback(err);
             }
