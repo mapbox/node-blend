@@ -1,10 +1,8 @@
 #include "blend.hpp"
-#include "writer.hpp"
 #include "palette.hpp"
-
-#include <sstream>
-#include <memory>
-#include <cstring>
+#include "image_data.hpp"
+#include "png_io.hpp"
+#include "jpeg_io.hpp"
 
 using namespace v8;
 using namespace node;
@@ -96,6 +94,11 @@ Handle<Value> Blend(const Arguments& args) {
         if (baton->compression <= 0) baton->compression = Z_DEFAULT_COMPRESSION;
         if (baton->compression > Z_BEST_COMPRESSION) {
             return TYPE_EXCEPTION("Compression level must be between 1 and 9.");
+        }
+
+        Local<Value> palette_val = options->Get(String::NewSymbol("palette"));
+        if (!palette_val.IsEmpty() && palette_val->IsObject()) {
+            baton->palette = ObjectWrap::Unwrap<Palette>(palette_val->ToObject())->palette();
         }
     }
 
@@ -223,6 +226,34 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     }
 }
 
+void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alpha) {
+    try {
+        if (baton->format == BLEND_FORMAT_JPEG) {
+            save_as_jpeg(baton->stream, baton->quality, image);
+        } else {
+            // Save as PNG.
+            int strategy = Z_DEFAULT_STRATEGY;
+            int trans_mode = -1;
+            double gamma = -1;
+
+            if (baton->palette.get() && baton->palette->valid()) {
+                save_as_png8_pal(baton->stream, image, *baton->palette, baton->compression, strategy);
+            } else if (baton->quality > 0) {
+                // Paletted PNG.
+                if (alpha) {
+                    save_as_png8_hex(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, gamma);
+                } else {
+                    save_as_png8_oct(baton->stream, image, baton->quality, baton->compression, strategy);
+                }
+            } else {
+                save_as_png(baton->stream, image, baton->compression, strategy, alpha);
+            }
+        }
+    } catch (const std::exception& ex) {
+        baton->message = ex.what();
+    }
+}
+
 WORKER_BEGIN(Work_Blend) {
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
@@ -265,10 +296,7 @@ WORKER_BEGIN(Work_Blend) {
             image->x == 0 && image->y == 0 &&
             (int)layer->width == baton->width && (int)layer->height == baton->height)
         {
-            baton->result = (unsigned char *)malloc(image->dataLength);
-            assert(baton->result);
-            memcpy(baton->result, image->data, image->dataLength);
-            baton->resultLength = image->dataLength;
+            baton->stream.write((char *)image->data, image->dataLength);
             WORKER_END();
         }
 
@@ -319,6 +347,7 @@ WORKER_BEGIN(Work_Blend) {
     // When we don't actually have transparent pixels, we don't need to set
     // the matte.
     if (alpha) {
+        // We can't use memset here because it converts the color to a 1-byte value.
         for (int i = 0; i < pixels; i++) {
             target[i] = baton->matte;
         }
@@ -331,22 +360,18 @@ WORKER_BEGIN(Work_Blend) {
         }
     }
 
-    Blend_Encode((unsigned char*)target, baton, alpha);
+    image_data_32 image(baton->width, baton->height, (unsigned int*)target);
+    Blend_Encode(image, baton, alpha);
     free(target);
     target = NULL;
     WORKER_END();
-}
-
-void freeBuffer(char *data, void *hint) {
-    free(data);
-    data = NULL;
 }
 
 WORKER_BEGIN(Work_AfterBlend) {
     HandleScope scope;
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
-    if (!baton->message.length() && baton->result) {
+    if (!baton->message.length()) {
         Local<Array> warnings = Array::New();
         std::vector<std::string>::iterator pos = baton->warnings.begin();
         std::vector<std::string>::iterator end = baton->warnings.end();
@@ -354,10 +379,10 @@ WORKER_BEGIN(Work_AfterBlend) {
             warnings->Set(i, String::New((*pos).c_str()));
         }
 
-        // In the success case, node's Buffer implementation frees the result pointer for us.
+        std::string result = baton->stream.str();
         Local<Value> argv[] = {
             Local<Value>::New(Null()),
-            Local<Value>::New(Buffer::New((char*)baton->result, baton->resultLength, freeBuffer, NULL)->handle_),
+            Local<Value>::New(Buffer::New((char *)result.data(), result.length())->handle_),
             Local<Value>::New(warnings)
         };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
@@ -365,12 +390,6 @@ WORKER_BEGIN(Work_AfterBlend) {
         Local<Value> argv[] = {
             Local<Value>::New(Exception::Error(String::New(baton->message.c_str())))
         };
-
-        // In the error case, we have to manually free this.
-        if (baton->result) {
-            free(baton->result);
-            baton->result = NULL;
-        }
 
         assert(!baton->callback.IsEmpty());
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 1, argv);

@@ -33,6 +33,7 @@
 #include <map>
 #include <iostream>
 #include <tr1/memory>
+#include <tr1/unordered_map>
 
 
 #define U2RED(x) ((x)&0xff)
@@ -102,7 +103,7 @@ struct rgba
 };
 
 
-typedef std::map<unsigned, unsigned> rgba_hash_table;
+typedef std::tr1::unordered_map<unsigned, unsigned char> rgba_hash_table;
 
 
 class rgba_palette {
@@ -115,8 +116,8 @@ public:
     const std::vector<rgb>& palette() const;
     const std::vector<unsigned>& alphaTable() const;
 
-    unsigned quantize(rgba const& c) const;
-    inline unsigned quantize(unsigned const& c) const
+    unsigned char quantize(rgba const& c) const;
+    unsigned char quantize(unsigned const& c) const
     {
         rgba_hash_table::const_iterator it = color_hashmap_.find(c);
         if (it != color_hashmap_.end())

@@ -8,14 +8,21 @@
 #include <png.h>
 #include <jpeglib.h>
 
-#include <cstdlib>
-#include <cstring>
 
+// stl
+#include <iostream>
+#include <sstream>
+#include <memory>
+#include <cstring>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <tr1/memory>
 
 #include "reader.hpp"
+#include "palette.hpp"
+
+//#define NODE_BLEND_USE_MINIZ
 
 
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
@@ -85,12 +92,11 @@ struct BlendBaton {
     bool reencode;
     int width;
     int height;
+    palette_ptr palette;
     unsigned int matte;
     int compression;
 
-    unsigned char* result;
-    size_t resultLength;
-    size_t max;
+    std::ostringstream stream;
 
     BlendBaton() :
         quality(0),
@@ -100,9 +106,7 @@ struct BlendBaton {
         height(0),
         matte(0),
         compression(Z_DEFAULT_COMPRESSION),
-        result(NULL),
-        resultLength(0),
-        max(0)
+        stream(std::ios::out | std::ios::binary)
     {
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
         ev_ref(EV_DEFAULT_UC);

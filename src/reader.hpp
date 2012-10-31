@@ -48,7 +48,7 @@ class PNGImageReader : public ImageReader {
 public:
     PNGImageReader(unsigned char* src, size_t len);
     virtual ~PNGImageReader();
-   bool decode();
+    bool decode();
 
 protected:
     static void readCallback(png_structp png, png_bytep data, png_size_t length);

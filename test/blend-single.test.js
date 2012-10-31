@@ -17,7 +17,7 @@ describe('reencode', function() {
         blend([ images[0] ], { reencode: true, compression: 1 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            assert.ok(data.length > 15000);
+            assert.ok(data.length > 16000);
             utilities.imageEqualsFile(data, 'test/fixture/results/14.png', done);
         });
     });
@@ -26,7 +26,7 @@ describe('reencode', function() {
         blend([ images[0] ], { reencode: true, compression: 9 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            assert.ok(data.length <= 15000);
+            assert.ok(data.length <= 16000);
             utilities.imageEqualsFile(data, 'test/fixture/results/14.png', done);
         });
     });
