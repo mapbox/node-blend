@@ -22,9 +22,6 @@
 #include "reader.hpp"
 #include "palette.hpp"
 
-//#define NODE_BLEND_USE_MINIZ
-
-
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
     #define WORKER_BEGIN(name)                  int name(eio_req *req)
     #define WORKER_END()                        return 0;
@@ -62,6 +59,16 @@ enum BlendFormat {
     BLEND_FORMAT_JPEG
 };
 
+enum AlphaMode {
+    BLEND_MODE_OCTREE,
+    BLEND_MODE_HEXTREE
+};
+
+enum EncoderType {
+    BLEND_ENCODER_LIBPNG,
+    BLEND_ENCODER_MINIZ
+};
+
 #define TRY_CATCH_CALL(context, callback, argc, argv)                          \
 {   v8::TryCatch try_catch;                                                    \
     (callback)->Call((context), (argc), (argv));                               \
@@ -95,6 +102,8 @@ struct BlendBaton {
     palette_ptr palette;
     unsigned int matte;
     int compression;
+    AlphaMode mode;
+    EncoderType encoder;
 
     std::ostringstream stream;
 
@@ -106,6 +115,8 @@ struct BlendBaton {
         height(0),
         matte(0),
         compression(Z_DEFAULT_COMPRESSION),
+        mode(BLEND_MODE_HEXTREE),
+        encoder(BLEND_ENCODER_LIBPNG),
         stream(std::ios::out | std::ios::binary)
     {
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4

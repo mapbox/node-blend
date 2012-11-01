@@ -32,7 +32,9 @@ var queue = new Queue(function(i, done) {
     blend(images, {
         width: 700,
         height: 600,
-        quality: 256
+        quality: 256,
+        encoder:'libpng',
+        mode:'hextree'
     }, function(err, data) {
         if (!written) {
             fs.writeFileSync('./out.png', data);

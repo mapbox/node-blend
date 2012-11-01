@@ -59,7 +59,7 @@ Handle<Value> Blend(const Arguments& args) {
         baton->quality = options->Get(String::NewSymbol("quality"))->Int32Value();
 
         Local<Value> format_val = options->Get(String::NewSymbol("format"));
-        if (!format_val.IsEmpty() && format_val->BooleanValue()) {
+        if (!format_val.IsEmpty() && format_val->IsString()) {
             if (strcmp(*String::AsciiValue(format_val), "jpeg") == 0 ||
                     strcmp(*String::AsciiValue(format_val), "jpg") == 0) {
                 baton->format = BLEND_FORMAT_JPEG;
@@ -99,6 +99,26 @@ Handle<Value> Blend(const Arguments& args) {
         Local<Value> palette_val = options->Get(String::NewSymbol("palette"));
         if (!palette_val.IsEmpty() && palette_val->IsObject()) {
             baton->palette = ObjectWrap::Unwrap<Palette>(palette_val->ToObject())->palette();
+        }
+
+        Local<Value> mode_val = options->Get(String::NewSymbol("mode"));
+        if (!mode_val.IsEmpty() && mode_val->IsString()) {
+            if (strcmp(*String::AsciiValue(mode_val), "octree") == 0 ||
+                strcmp(*String::AsciiValue(mode_val), "o") == 0) {
+                baton->mode = BLEND_MODE_OCTREE;
+            }
+            else if (strcmp(*String::AsciiValue(mode_val), "hextree") == 0 ||
+                strcmp(*String::AsciiValue(mode_val), "h") == 0) {
+                baton->mode = BLEND_MODE_HEXTREE;
+            }
+        }
+
+        Local<Value> encoder_val = options->Get(String::NewSymbol("encoder"));
+        if (!encoder_val.IsEmpty() && encoder_val->IsString()) {
+            if (strcmp(*String::AsciiValue(encoder_val), "miniz") == 0) {
+                baton->encoder = BLEND_ENCODER_MINIZ;
+            }
+            // default is libpng
         }
     }
 
@@ -235,18 +255,19 @@ void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alpha) {
             int strategy = Z_DEFAULT_STRATEGY;
             int trans_mode = -1;
             double gamma = -1;
-
+            bool use_miniz = false;
+            if (baton->encoder == BLEND_ENCODER_MINIZ) use_miniz = true;
             if (baton->palette.get() && baton->palette->valid()) {
-                save_as_png8_pal(baton->stream, image, *baton->palette, baton->compression, strategy);
+                save_as_png8_pal(baton->stream, image, *baton->palette, baton->compression, strategy, use_miniz);
             } else if (baton->quality > 0) {
                 // Paletted PNG.
-                if (alpha) {
-                    save_as_png8_hex(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, gamma);
+                if (alpha && baton->mode == BLEND_MODE_HEXTREE) {
+                    save_as_png8_hex(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, gamma, use_miniz);
                 } else {
-                    save_as_png8_oct(baton->stream, image, baton->quality, baton->compression, strategy);
+                    save_as_png8_oct(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, use_miniz);
                 }
             } else {
-                save_as_png(baton->stream, image, baton->compression, strategy, alpha);
+                save_as_png(baton->stream, image, baton->compression, strategy, alpha, use_miniz);
             }
         }
     } catch (const std::exception& ex) {

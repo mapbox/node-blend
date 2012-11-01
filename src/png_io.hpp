@@ -60,20 +60,23 @@ void save_as_png(T1 & file,
                 T2 const& image,
                 int compression = Z_DEFAULT_COMPRESSION,
                 int strategy = Z_DEFAULT_STRATEGY,
-                int alpha = false)
+                int alpha = false,
+                bool use_miniz = false)
 {
-#ifdef NODE_BLEND_USE_MINIZ
-    MiniZ::PNGWriter writer(compression);
-    if (alpha) {
-        writer.writeIHDR(image.width(), image.height(), 32);
-        writer.writeIDAT(image);
-    } else {
-        writer.writeIHDR(image.width(), image.height(), 24);
-        writer.writeIDATStripAlpha(image);
+    if (use_miniz) {
+        MiniZ::PNGWriter writer(compression);
+        if (alpha) {
+            writer.writeIHDR(image.width(), image.height(), 32);
+            writer.writeIDAT(image);
+        } else {
+            writer.writeIHDR(image.width(), image.height(), 24);
+            writer.writeIDATStripAlpha(image);
+        }
+        writer.writeIEND();
+        writer.toStream(file);
+        return;
     }
-    writer.writeIEND();
-    writer.toStream(file);
-#else
+
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                 error_ptr,0, 0);
@@ -118,7 +121,6 @@ void save_as_png(T1 & file,
     png_set_rows(png_ptr, info_ptr, (png_bytepp)&row_pointers);
     png_write_png(png_ptr, info_ptr, alpha ? PNG_TRANSFORM_IDENTITY : PNG_TRANSFORM_STRIP_FILLER_AFTER, NULL);
     png_destroy_write_struct(&png_ptr, &info_ptr);
-#endif
 }
 
 template <typename T>
@@ -228,19 +230,21 @@ void save_as_png(T & file, std::vector<rgb> const& palette,
                  unsigned color_depth,
                  int compression,
                  int strategy,
-                 std::vector<unsigned> const&alpha)
+                 std::vector<unsigned> const&alpha,
+                 bool use_miniz)
 {
-#ifdef NODE_BLEND_USE_MINIZ
-    MiniZ::PNGWriter writer(compression);
-    // image.width()/height() does not reflect the actual image dimensions; it
-    // refers to the quantized scanlines.
-    writer.writeIHDR(width, height, color_depth);
-    writer.writePLTE(palette);
-    writer.writetRNS(alpha);
-    writer.writeIDAT(image);
-    writer.writeIEND();
-    writer.toStream(file);
-#else
+    if (use_miniz) {
+        MiniZ::PNGWriter writer(compression);
+        // image.width()/height() does not reflect the actual image dimensions; it
+        // refers to the quantized scanlines.
+        writer.writeIHDR(width, height, color_depth);
+        writer.writePLTE(palette);
+        writer.writetRNS(alpha);
+        writer.writeIDAT(image);
+        writer.writeIEND();
+        writer.toStream(file);
+        return;
+    }
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                 error_ptr,0, 0);
@@ -303,12 +307,11 @@ void save_as_png(T & file, std::vector<rgb> const& palette,
 
     png_write_end(png_ptr, info_ptr);
     png_destroy_write_struct(&png_ptr, &info_ptr);
-#endif
 }
 
 template <typename T1,typename T2>
 void save_as_png8_oct(T1 & file, T2 const& image, const unsigned max_colors = 256,
-                      int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY, int trans_mode = -1)
+                      int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY, int trans_mode = -1, bool use_miniz = false)
 {
     // number of alpha ranges in png8 format; 2 results in smallest image with binary transparency
     // 3 is minimum for semitransparency, 4 is recommended, anything else is worse
@@ -453,7 +456,7 @@ void save_as_png8_oct(T1 & file, T2 const& image, const unsigned max_colors = 25
         // >16 && <=256 colors -> write 8-bit color depth
         image_data_8 reduced_image(width,height);
         reduce_8(image, reduced_image, trees, limits, TRANSPARENCY_LEVELS, alphaTable);
-        save_as_png(file,palette,reduced_image,width,height,8,compression,strategy,alphaTable);
+        save_as_png(file,palette,reduced_image,width,height,8,compression,strategy,alphaTable,use_miniz);
     }
     else if (palette.size() == 1)
     {
@@ -466,7 +469,7 @@ void save_as_png8_oct(T1 & file, T2 const& image, const unsigned max_colors = 25
             alphaTable.resize(1);
             alphaTable[0] = meanAlpha;
         }
-        save_as_png(file,palette,reduced_image,width,height,1,compression,strategy,alphaTable);
+        save_as_png(file,palette,reduced_image,width,height,1,compression,strategy,alphaTable,use_miniz);
     }
     else
     {
@@ -475,7 +478,7 @@ void save_as_png8_oct(T1 & file, T2 const& image, const unsigned max_colors = 25
         unsigned image_height = height;
         image_data_8 reduced_image(image_width,image_height);
         reduce_4(image, reduced_image, trees, limits, TRANSPARENCY_LEVELS, alphaTable);
-        save_as_png(file,palette,reduced_image,width,height,4,compression,strategy,alphaTable);
+        save_as_png(file,palette,reduced_image,width,height,4,compression,strategy,alphaTable,use_miniz);
     }
 }
 
@@ -483,7 +486,8 @@ void save_as_png8_oct(T1 & file, T2 const& image, const unsigned max_colors = 25
 template <typename T1, typename T2, typename T3>
 void save_as_png8(T1 & file, T2 const& image, T3 const & tree,
                   std::vector<rgb> const& palette, std::vector<unsigned> const& alphaTable,
-                  int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY)
+                  int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY,
+                  bool use_miniz = false)
 {
     unsigned width = image.width();
     unsigned height = image.height();
@@ -503,7 +507,7 @@ void save_as_png8(T1 & file, T2 const& image, T3 const & tree,
                 row_out[x] = tree.quantize(row[x]);
             }
         }
-        save_as_png(file, palette, reduced_image, width, height, 8, compression, strategy, alphaTable);
+        save_as_png(file, palette, reduced_image, width, height, 8, compression, strategy, alphaTable, use_miniz);
     }
     else if (palette.size() == 1)
     {
@@ -512,7 +516,7 @@ void save_as_png8(T1 & file, T2 const& image, T3 const & tree,
         unsigned image_height = height;
         image_data_8 reduced_image(image_width, image_height);
         reduced_image.set(0);
-        save_as_png(file, palette, reduced_image, width, height, 1, compression, strategy, alphaTable);
+        save_as_png(file, palette, reduced_image, width, height, 1, compression, strategy, alphaTable, use_miniz);
     }
     else
     {
@@ -534,14 +538,14 @@ void save_as_png8(T1 & file, T2 const& image, T3 const & tree,
                 row_out[x>>1] |= index;
             }
         }
-        save_as_png(file, palette, reduced_image, width, height, 4, compression, strategy, alphaTable);
+        save_as_png(file, palette, reduced_image, width, height, 4, compression, strategy, alphaTable, use_miniz);
     }
 }
 
 template <typename T1,typename T2>
 void save_as_png8_hex(T1 & file, T2 const& image, int colors = 256,
                       int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY,
-                      int trans_mode = -1, double gamma = 2.0)
+                      int trans_mode = -1, double gamma = 2.0, bool use_miniz = false)
 {
     unsigned width = image.width();
     unsigned height = image.height();
@@ -576,14 +580,14 @@ void save_as_png8_hex(T1 & file, T2 const& image, int colors = 256,
         alphaTable.push_back(pal[i].a);
     }
 
-    save_as_png8<T1, T2, hextree<rgba> >(file, image, tree, palette, alphaTable, compression, strategy);
+    save_as_png8<T1, T2, hextree<rgba> >(file, image, tree, palette, alphaTable, compression, strategy, use_miniz);
 }
 
 template <typename T1, typename T2>
 void save_as_png8_pal(T1 & file, T2 const& image, rgba_palette const& pal,
-                      int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY)
+                      int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY, bool use_miniz = false)
 {
-    save_as_png8<T1, T2, rgba_palette>(file, image, pal, pal.palette(), pal.alphaTable(), compression, strategy);
+    save_as_png8<T1, T2, rgba_palette>(file, image, pal, pal.palette(), pal.alphaTable(), compression, strategy, use_miniz);
 }
 
 #endif // NODE_BLEND_SRC_PNG_IO_HPP
