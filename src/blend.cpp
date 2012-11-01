@@ -249,6 +249,7 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
 void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alpha) {
     try {
         if (baton->format == BLEND_FORMAT_JPEG) {
+            if (baton->quality == 0) baton->quality = 80;
             save_as_jpeg(baton->stream, baton->quality, image);
         } else {
             // Save as PNG.
