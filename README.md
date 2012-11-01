@@ -20,6 +20,19 @@ blend([ image1, image2 ], {
 });
 ```
 
+### Options
+
+- format: 'jpeg' or 'png'
+- quality: integer indicating the quality of the final image. Meaning and range differs per format. For JPEG range is from 0-100. It defaults to 80. The lower the number the lower image quality and smaller the final image size. For PNG range is from 2-256. It means the # of colors to reduce the image to using. The lower the number the lower image quality and smaller the final image size.
+- width : integer, default 0: final width of blended image. If options provided with no width value it will default to 0
+- height : integer, default 0: final width of blended image. If options provided with no height value it will default to 0
+- reencode: boolean, default false
+- matte: when alpha is used this is the color to initialize the buffer to (reencode will be set to true automatically when a matte is supplied)
+- compression: level of compression to use when format is `png`. Valid range is between 1 and 9, the higher value being higher compression and lower speed. The lower value indicates faster encoding but larger final images. Default is 6.
+- palette: pass a blend.Palette object to be used to reduced PNG images to a fixed array of colors
+- mode: 'octree' or 'hextree' - the PNG quantization method to use, from Mapnik: https://github.com/mapnik/mapnik/wiki/OutputFormats. Octree only support a few alpha levels, but is faster while Hextree supports many alpha levels.
+- encoder: 'libpng' or 'miniz' - the PNG encoder to use. `libpng` is standard while `miniz` is experimental but faster.
+
 # Installation
 
 To compile, this module requires `libjpeg` and `libpng`.
