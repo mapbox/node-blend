@@ -31,7 +31,7 @@ blend([ image1, image2 ], {
 - `compression`: level of compression to use when format is `png`. Valid range is between 1 and 9, the higher value being higher compression and lower speed. The lower value indicates faster encoding but larger final images. Default is 6.
 - `palette`: pass a blend.Palette object to be used to reduced PNG images to a fixed array of colors
 - `mode`: `octree` or `hextree` - the PNG quantization method to use, from Mapnik: https://github.com/mapnik/mapnik/wiki/OutputFormats. Octree only support a few alpha levels, but is faster while Hextree supports many alpha levels.
-- `encoder`: `libpng' or `miniz` - the PNG encoder to use. `libpng` is standard while `miniz` is experimental but faster.
+- `encoder`: `libpng` or `miniz` - the PNG encoder to use. `libpng` is standard while `miniz` is experimental but faster.
 
 # Installation
 
