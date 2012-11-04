@@ -108,6 +108,22 @@ describe('per-image settings', function() {
         });
     });
 
+    it('should support miniz MZ_UBER_COMPRESSION', function(done) {
+        blend([], {
+            width: 128,
+            height: 128,
+            matte: '12345678',
+            encoder:'miniz',
+            compression:10
+        }, function(err, data, warnings) {
+            if (err) return done(err);
+            assert.deepEqual(warnings, []);
+            utilities.imageEqualsFile(data, 'test/fixture/results/25.png', done);
+            assert.ok(data.length <= 300);
+            assert.ok(data.length < fs.readFileSync('test/fixture/results/25.png').length);
+        });
+    });
+
     it('should not require image dimensions if there are no images', function() {
         assert.throws(function() {
             blend([], { matte: '12345678' }, function() {});

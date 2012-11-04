@@ -79,6 +79,29 @@ describe('invalid arguments', function() {
         }, /JPEG quality is range 0-100/);
     });
 
+    it('should not allow compression level above what zlib supports', function() {
+        assert.throws(function() {
+            blend([
+                fs.readFileSync('test/fixture/1c.jpg'),
+                fs.readFileSync('test/fixture/2.png')
+            ], {
+                compression:10
+            }, function() {});
+        }, /Compression level must be between 1 and 9/);
+    });
+
+    it('should not allow compression level above what miniz supports', function() {
+        assert.throws(function() {
+            blend([
+                fs.readFileSync('test/fixture/1c.jpg'),
+                fs.readFileSync('test/fixture/2.png')
+            ], {
+                compression:11,
+                encoder:'miniz'
+            }, function() {});
+        }, /Compression level must be between 1 and 10/);
+    });
+
     it('should not allow negative image dimensions', function() {
         assert.throws(function() {
             blend(images, { width: -20 }, function() {});

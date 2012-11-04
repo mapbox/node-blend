@@ -90,12 +90,6 @@ Handle<Value> Blend(const Arguments& args) {
             }
         }
 
-        baton->compression = options->Get(String::NewSymbol("compression"))->Int32Value();
-        if (baton->compression <= 0) baton->compression = Z_DEFAULT_COMPRESSION;
-        if (baton->compression > Z_BEST_COMPRESSION) {
-            return TYPE_EXCEPTION("Compression level must be between 1 and 9.");
-        }
-
         Local<Value> palette_val = options->Get(String::NewSymbol("palette"));
         if (!palette_val.IsEmpty() && palette_val->IsObject()) {
             baton->palette = ObjectWrap::Unwrap<Palette>(palette_val->ToObject())->palette();
@@ -119,6 +113,17 @@ Handle<Value> Blend(const Arguments& args) {
                 baton->encoder = BLEND_ENCODER_MINIZ;
             }
             // default is libpng
+        }
+
+        int max_compression = Z_BEST_COMPRESSION;
+        if (baton->encoder == BLEND_ENCODER_MINIZ) max_compression = MZ_UBER_COMPRESSION;
+        baton->compression = options->Get(String::NewSymbol("compression"))->Int32Value();
+        if (baton->compression <= 0) baton->compression = Z_DEFAULT_COMPRESSION;
+        if (baton->compression > max_compression) {
+            std::ostringstream msg;
+            msg << "Compression level must be between 1 and "
+                << max_compression;
+            return TYPE_EXCEPTION(msg.str().c_str());
         }
     }
 
