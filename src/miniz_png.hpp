@@ -119,7 +119,7 @@ public:
     void writePLTE(std::vector<rgb> const& palette) {
         // Write PLTE chunk.
         size_t PLTE = startChunk(PLTE_tpl, 8);
-        mz_uint8 *colors = const_cast<mz_uint8 *>(reinterpret_cast<const mz_uint8 *>(&palette[0]));
+        const mz_uint8 *colors = reinterpret_cast<const mz_uint8 *>(&palette[0]);
         mz_bool status = tdefl_output_buffer_putter(colors, palette.size() * 3, &buffer);
         if (status != MZ_TRUE) throw std::bad_alloc();
         finishChunk(PLTE);
