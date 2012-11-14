@@ -125,6 +125,11 @@ Handle<Value> Blend(const Arguments& args) {
                 << max_compression;
             return TYPE_EXCEPTION(msg.str().c_str());
         }
+
+        Local<Value> tint_val = options->Get(String::NewSymbol("tint"));
+        if (!tint_val.IsEmpty() && tint_val->IsString()) {
+            baton->tint = *String::AsciiValue(tint_val);
+        }
     }
 
     Local<Array> images = Local<Array>::Cast(args[0]);
@@ -388,6 +393,25 @@ WORKER_BEGIN(Work_Blend) {
     }
 
     image_data_32 image(baton->width, baton->height, (unsigned int*)target);
+
+    if (!baton->tint.empty()) {
+        // for now, just make grayscale
+        for (unsigned int y = 0; y < image.height(); ++y)
+        {
+            unsigned int* row_from = image.getRow(y);
+            for (unsigned int x = 0; x < image.width(); ++x)
+            {
+                unsigned rgba = row_from[x];
+                unsigned r = rgba & 0xff;
+                unsigned g = (rgba >> 8 ) & 0xff;
+                unsigned b = (rgba >> 16) & 0xff;
+                unsigned a = (rgba >> 24) & 0xff;
+                unsigned luminosity = ((r*0.2126) + (g*0.7152) + (b*0.0722)) + .5;
+                row_from[x] = (a << 24) | (luminosity << 16) | (luminosity << 8) | (luminosity) ;
+            }
+        }
+    }
+
     Blend_Encode(image, baton, alpha);
     free(target);
     target = NULL;

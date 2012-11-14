@@ -104,6 +104,7 @@ struct BlendBaton {
     int compression;
     AlphaMode mode;
     EncoderType encoder;
+    std::string tint;
 
     std::ostringstream stream;
 
@@ -117,6 +118,7 @@ struct BlendBaton {
         compression(Z_DEFAULT_COMPRESSION),
         mode(BLEND_MODE_HEXTREE),
         encoder(BLEND_ENCODER_LIBPNG),
+        tint(),
         stream(std::ios::out | std::ios::binary)
     {
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
