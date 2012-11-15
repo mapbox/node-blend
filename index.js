@@ -3,6 +3,8 @@ module.exports = blend.blend;
 module.exports.Palette = blend.Palette;
 module.exports.libpng = blend.libpng;
 module.exports.libjpeg = blend.libjpeg;
+module.exports.rgb2hsl2 = blend.rgb2hsl2;
+module.exports.hsl2rgb2 = blend.hsl2rgb2;
 
 var Palette = blend.Palette;
 Palette.prototype.clone = function() {
@@ -31,9 +33,9 @@ module.exports.hsl2rgb = function(h, s, l) {
     var m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
     var m1 = l * 2 - m2;
     return [
-        parseInt(.5+hueToRGB(m1, m2, h + 0.33333) * 255,10),
-        parseInt(.5+hueToRGB(m1, m2, h) * 255,10),
-        parseInt(.5+hueToRGB(m1, m2, h - 0.33333) * 255,10)
+        parseInt(hueToRGB(m1, m2, h + 0.33333) * 255,10),
+        parseInt(hueToRGB(m1, m2, h) * 255,10),
+        parseInt(hueToRGB(m1, m2, h - 0.33333) * 255,10)
     ];
 };
 
