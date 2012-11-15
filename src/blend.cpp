@@ -36,7 +36,7 @@ unsigned int hexToUInt32Color(char *hex) {
 }
 
 #ifdef USE_BOOST_GIL
-void rgb2hsl_2(unsigned r, unsigned g, unsigned b,
+void rgb2hsl(unsigned r, unsigned g, unsigned b,
              float & h, float & s, float& l) {
     using namespace boost;
     using namespace gil;
@@ -49,7 +49,7 @@ void rgb2hsl_2(unsigned r, unsigned g, unsigned b,
     l = get_color(hsl_src,lightness_t());
 }
 
-void hsl2rgb_2(float h, float s, float l,
+void hsl2rgb(float h, float s, float l,
              unsigned & r, unsigned & g, unsigned & b) {
     using namespace boost;
     using namespace gil;
@@ -61,20 +61,19 @@ void hsl2rgb_2(float h, float s, float l,
     g = get_color(rgb_dst,green_t());
     b = get_color(rgb_dst,blue_t());
 }
-#endif
 
-void rgb2hsl(unsigned rgba, float & hue, float & saturation, float & lightness) {
-    unsigned red = rgba & 0xff;
-    unsigned green = (rgba >> 8 ) & 0xff;
-    unsigned blue = (rgba >> 16) & 0xff;
-    float r = red/255.0;
-    float g = green/255.0;
-    float b = blue/255.0;
+#else
+
+void rgb2hsl(unsigned r, unsigned g, unsigned b,
+             float & h, float & s, float & l) {
+    r = r/255.0;
+    g = g/255.0;
+    b = b/255.0;
     float max = std::max(r,std::max(g,b));
     float min = std::min(r,std::min(g,b));
     float delta = max - min;
     float gamma = max + min;
-    float h = 0.0, s = 0.0, l = gamma / 2.0;
+    h = 0.0, s = 0.0, l = gamma / 2.0;
     if (delta) {
         s = l > 0.5 ? delta / (2.0 - gamma) : delta / gamma;
         if (max == r && max != g) h = (g - b) / delta + (g < b ? 6.0 : 0.0);
@@ -82,9 +81,6 @@ void rgb2hsl(unsigned rgba, float & hue, float & saturation, float & lightness) 
         if (max == b && max != r) h = (r - g) / delta + 4.0;
         h /= 6.0;
     }
-    hue = h * 3.65;// * 365;
-    saturation = s;// * 100;
-    lightness = l;// * 100;
 }
 
 float hueToRGB(float m1, float m2, float h2) {
@@ -95,23 +91,20 @@ float hueToRGB(float m1, float m2, float h2) {
     return m1;
 };
 
-unsigned hsl2rgb(unsigned rgba, float h, float s, float l) {
-    unsigned a = (rgba >> 24) & 0xff;
+void hsl2rgb(float h, float s, float l,
+             unsigned & r, unsigned & g, unsigned & b) {
     if (!s) {
-        int color = static_cast<int>(l * 255);
-        return (a << 24) | (color << 16) | (color << 8) | (color);
+        r = g = b = static_cast<unsigned>(l * 255);
     }
-
-    float h2 = h / 360.0;
 
     float m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
     float m1 = l * 2 - m2;
-    unsigned r = static_cast<unsigned>(hueToRGB(m1, m2, h2 + 0.33333) * 255);
-    unsigned g = static_cast<unsigned>(hueToRGB(m1, m2, h2) * 255);
-    unsigned b = static_cast<unsigned>(hueToRGB(m1, m2, h2 - 0.33333) * 255);
-    return (a << 24) | (b << 16) | (g << 8) | (r);
+    r = static_cast<unsigned>(hueToRGB(m1, m2, h + 0.33333) * 255);
+    g = static_cast<unsigned>(hueToRGB(m1, m2, h) * 255);
+    b = static_cast<unsigned>(hueToRGB(m1, m2, h - 0.33333) * 255);
 }
 
+#endif
 
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
@@ -489,18 +482,13 @@ WORKER_BEGIN(Work_Blend) {
             {
                 unsigned rgba = row_from[x];
                 float h,s,l;
-#ifdef USE_BOOST_GIL
                 unsigned r = rgba & 0xff;
                 unsigned g = (rgba >> 8 ) & 0xff;
                 unsigned b = (rgba >> 16) & 0xff;
                 unsigned a = (rgba >> 24) & 0xff;
-                rgb2hsl_2(r,g,b,h,s,l);
-                hsl2rgb_2(h,s,l,r,g,b);
+                rgb2hsl(r,g,b,h,s,l);
+                hsl2rgb(h,s,l,r,g,b);
                 row_from[x] = (a << 24) | (b << 16) | (g << 8) | (r);
-#else
-                rgb2hsl(rgba,h,s,l);
-                row_from[x] = hsl2rgb(rgba,h,s,l);
-#endif
             }
         }
     }
