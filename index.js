@@ -59,7 +59,7 @@ var rgb2hsl = function(r, g, b){
 };
 module.exports.rgb2hsl = rgb2hsl;
 
-module.exports.parseTintString = function(str) {
+module.exports.parseTintStringOld = function(str) {
     if (!str.length) return {};
 
     var options = {};
@@ -70,8 +70,8 @@ module.exports.parseTintString = function(str) {
             parseInt(hex[1].substring(2, 4), 16),
             parseInt(hex[1].substring(4, 6), 16)
         );
-        options.hue = hsl[0];
-        options.saturation = hsl[1];
+        options.hue = hsl[0]*365;
+        options.saturation = hsl[1]*100;
         // Map midpoint grey to the color value, stretching values to
         // preserve white/black range. Will preserve good contrast and
         // midtone color at the cost of clipping extreme light/dark values.
