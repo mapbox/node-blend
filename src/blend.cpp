@@ -5,6 +5,7 @@
 #include "jpeg_io.hpp"
 
 #include <sstream>
+#include <cmath> // for fmod
 
 //#define USE_BOOST_GIL
 
@@ -37,7 +38,7 @@ unsigned int hexToUInt32Color(char *hex) {
 
 #ifdef USE_BOOST_GIL
 void rgb2hsl(unsigned r, unsigned g, unsigned b,
-             float & h, float & s, float& l) {
+             double & h, double & s, double & l) {
     using namespace boost;
     using namespace gil;
     using namespace hsl_color_space;
@@ -49,7 +50,7 @@ void rgb2hsl(unsigned r, unsigned g, unsigned b,
     l = get_color(hsl_src,lightness_t());
 }
 
-void hsl2rgb(float h, float s, float l,
+void hsl2rgb(double h, double s, double l,
              unsigned & r, unsigned & g, unsigned & b) {
     using namespace boost;
     using namespace gil;
@@ -64,15 +65,15 @@ void hsl2rgb(float h, float s, float l,
 
 #else
 
-void rgb2hsl(unsigned r, unsigned g, unsigned b,
-             float & h, float & s, float & l) {
-    r = r/255.0;
-    g = g/255.0;
-    b = b/255.0;
-    float max = std::max(r,std::max(g,b));
-    float min = std::min(r,std::min(g,b));
-    float delta = max - min;
-    float gamma = max + min;
+void rgb2hsl(unsigned red, unsigned green, unsigned blue,
+             double & h, double & s, double & l) {
+    double r = red/255.0;
+    double g = green/255.0;
+    double b = blue/255.0;
+    double max = std::max(r,std::max(g,b));
+    double min = std::min(r,std::min(g,b));
+    double delta = max - min;
+    double gamma = max + min;
     h = 0.0, s = 0.0, l = gamma / 2.0;
     if (delta) {
         s = l > 0.5 ? delta / (2.0 - gamma) : delta / gamma;
@@ -83,28 +84,72 @@ void rgb2hsl(unsigned r, unsigned g, unsigned b,
     }
 }
 
-float hueToRGB(float m1, float m2, float h2) {
-    float h = h2+1;//float h = (h2 + 1) % 1.0;
+double hueToRGB(double m1, double m2, double h) {
+    h = fmod(h+1,1);
     if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
     if (h * 2 < 1) return m2;
     if (h * 3 < 2) return m1 + (m2 - m1) * (0.66666 - h) * 6;
     return m1;
 };
 
-void hsl2rgb(float h, float s, float l,
+void hsl2rgb(double h, double s, double l,
              unsigned & r, unsigned & g, unsigned & b) {
     if (!s) {
         r = g = b = static_cast<unsigned>(l * 255);
     }
 
-    float m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
-    float m1 = l * 2 - m2;
+
+    double m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
+    double m1 = l * 2 - m2;
     r = static_cast<unsigned>(hueToRGB(m1, m2, h + 0.33333) * 255);
     g = static_cast<unsigned>(hueToRGB(m1, m2, h) * 255);
     b = static_cast<unsigned>(hueToRGB(m1, m2, h - 0.33333) * 255);
 }
 
 #endif
+
+Handle<Value> rgb2hsl2(const Arguments& args) {
+    HandleScope scope;
+    if (args.Length() != 3) {
+        return TYPE_EXCEPTION("Please pass r,g,b integer values as three arguments");
+    }
+    if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsNumber()) {
+        return TYPE_EXCEPTION("Please pass r,g,b integer values as three arguments");
+    }
+    unsigned r,g,b;
+    r = args[0]->IntegerValue();
+    g = args[1]->IntegerValue();
+    b = args[2]->IntegerValue();
+    Local<Array> hsl = Array::New(3);
+    double h,s,l;
+    rgb2hsl(r,g,b,h,s,l);
+    hsl->Set(0,Number::New(h));
+    hsl->Set(1,Number::New(s));
+    hsl->Set(2,Number::New(l));
+    return scope.Close(hsl);
+}
+
+Handle<Value> hsl2rgb2(const Arguments& args) {
+    HandleScope scope;
+    if (args.Length() != 3) {
+        return TYPE_EXCEPTION("Please pass hsl fractional values as three arguments");
+    }
+    if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsNumber()) {
+        return TYPE_EXCEPTION("Please pass hsl fractional values as three arguments");
+    }
+    double h,s,l;
+    h = args[0]->NumberValue();
+    s = args[1]->NumberValue();
+    l = args[2]->NumberValue();
+    Local<Array> rgb = Array::New(3);
+    unsigned r,g,b;
+    hsl2rgb(h,s,l,r,g,b);
+    rgb->Set(0,Integer::New(r));
+    rgb->Set(1,Integer::New(g));
+    rgb->Set(2,Integer::New(b));
+    return scope.Close(rgb);
+}
+
 
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
@@ -481,7 +526,7 @@ WORKER_BEGIN(Work_Blend) {
             for (unsigned int x = 0; x < image.width(); ++x)
             {
                 unsigned rgba = row_from[x];
-                float h,s,l;
+                double h,s,l;
                 unsigned r = rgba & 0xff;
                 unsigned g = (rgba >> 8 ) & 0xff;
                 unsigned b = (rgba >> 16) & 0xff;
@@ -533,6 +578,8 @@ WORKER_BEGIN(Work_AfterBlend) {
 
 extern "C" void init(Handle<Object> target) {
     NODE_SET_METHOD(target, "blend", Blend);
+    NODE_SET_METHOD(target, "rgb2hsl2", rgb2hsl2);
+    NODE_SET_METHOD(target, "hsl2rgb2", hsl2rgb2);
     Palette::Initialize(target);
 
     target->Set(
