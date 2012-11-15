@@ -26,6 +26,55 @@ unsigned int hexToUInt32Color(char *hex) {
     }
 }
 
+void rgb2hsl(unsigned rgba, float & hue, float & saturation, float & lightness) {
+    unsigned red = rgba & 0xff;
+    unsigned green = (rgba >> 8 ) & 0xff;
+    unsigned blue = (rgba >> 16) & 0xff;
+    float r = red/255.0;
+    float g = green/255.0;
+    float b = blue/255.0;
+    float max = std::max(r,std::max(g,b));
+    float min = std::min(r,std::min(g,b));
+    float delta = max - min;
+    float gamma = max + min;
+    float h = 0.0, s = 0.0, l = gamma / 2.0;
+    if (delta) {
+        s = l > 0.5 ? delta / (2.0 - gamma) : delta / gamma;
+        if (max == r && max != g) h = (g - b) / delta + (g < b ? 6.0 : 0.0);
+        if (max == g && max != b) h = (b - r) / delta + 2.0;
+        if (max == b && max != r) h = (r - g) / delta + 4.0;
+        h /= 6.0;
+    }
+    hue = h * 3.65;// * 365;
+    saturation = s;// * 100;
+    lightness = l;// * 100;
+}
+
+float hueToRGB(float m1, float m2, float h2) {
+    float h = h2+1;//float h = (h2 + 1) % 1.0;
+    if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
+    if (h * 2 < 1) return m2;
+    if (h * 3 < 2) return m1 + (m2 - m1) * (0.66666 - h) * 6;
+    return m1;
+};
+
+unsigned hsl2rgb(unsigned rgba, float h, float s, float l) {
+    unsigned a = (rgba >> 24) & 0xff;
+    if (!s) {
+        int color = static_cast<int>(l * 255);
+        return (a << 24) | (color << 16) | (color << 8) | (color);
+    }
+
+    float h2 = h / 360.0;
+
+    float m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
+    float m1 = l * 2 - m2;
+    unsigned r = static_cast<unsigned>(hueToRGB(m1, m2, h2 + 0.33333) * 255);
+    unsigned g = static_cast<unsigned>(hueToRGB(m1, m2, h2) * 255);
+    unsigned b = static_cast<unsigned>(hueToRGB(m1, m2, h2 - 0.33333) * 255);
+    return (a << 24) | (b << 16) | (g << 8) | (r);
+}
+
 
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
@@ -402,12 +451,9 @@ WORKER_BEGIN(Work_Blend) {
             for (unsigned int x = 0; x < image.width(); ++x)
             {
                 unsigned rgba = row_from[x];
-                unsigned r = rgba & 0xff;
-                unsigned g = (rgba >> 8 ) & 0xff;
-                unsigned b = (rgba >> 16) & 0xff;
-                unsigned a = (rgba >> 24) & 0xff;
-                unsigned luminosity = ((r*0.2126) + (g*0.7152) + (b*0.0722)) + .5;
-                row_from[x] = (a << 24) | (luminosity << 16) | (luminosity << 8) | (luminosity) ;
+                float h,s,l;
+                rgb2hsl(rgba,h,s,l);
+                row_from[x] = hsl2rgb(rgba,h,s,l);
             }
         }
     }
