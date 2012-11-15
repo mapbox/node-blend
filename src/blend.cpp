@@ -4,6 +4,13 @@
 #include "png_io.hpp"
 #include "jpeg_io.hpp"
 
+//#define USE_BOOST_GIL
+
+#ifdef USE_BOOST_GIL
+#include <boost/gil/gil_all.hpp>
+#include <boost/gil/extension/toolbox/hsl.hpp>
+#endif
+
 using namespace v8;
 using namespace node;
 
@@ -25,6 +32,34 @@ unsigned int hexToUInt32Color(char *hex) {
         return 0xFF000000 | ((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16);
     }
 }
+
+#ifdef USE_BOOST_GIL
+void rgb2hsl_2(unsigned r, unsigned g, unsigned b,
+             float & h, float & s, float& l) {
+    using namespace boost;
+    using namespace gil;
+    using namespace hsl_color_space;
+    rgb8_pixel_t rgb_src(r,g,b);
+    hsl32f_pixel_t hsl_src;
+    color_convert(rgb_src, hsl_src);
+    h = get_color(hsl_src,hue_t());
+    s = get_color(hsl_src,saturation_t());
+    l = get_color(hsl_src,lightness_t());
+}
+
+void hsl2rgb_2(float h, float s, float l,
+             unsigned & r, unsigned & g, unsigned & b) {
+    using namespace boost;
+    using namespace gil;
+    using namespace hsl_color_space;
+    hsl32f_pixel_t hsl_src(h,s,l);
+    rgb8_pixel_t rgb_dst;
+    color_convert(hsl_src, rgb_dst);
+    r = get_color(rgb_dst,red_t());
+    g = get_color(rgb_dst,green_t());
+    b = get_color(rgb_dst,blue_t());
+}
+#endif
 
 void rgb2hsl(unsigned rgba, float & hue, float & saturation, float & lightness) {
     unsigned red = rgba & 0xff;
@@ -452,8 +487,18 @@ WORKER_BEGIN(Work_Blend) {
             {
                 unsigned rgba = row_from[x];
                 float h,s,l;
+#ifdef USE_BOOST_GIL
+                unsigned r = rgba & 0xff;
+                unsigned g = (rgba >> 8 ) & 0xff;
+                unsigned b = (rgba >> 16) & 0xff;
+                unsigned a = (rgba >> 24) & 0xff;
+                rgb2hsl_2(r,g,b,h,s,l);
+                hsl2rgb_2(h,s,l,r,g,b);
+                row_from[x] = (a << 24) | (b << 16) | (g << 8) | (r);
+#else
                 rgb2hsl(rgba,h,s,l);
                 row_from[x] = hsl2rgb(rgba,h,s,l);
+#endif
             }
         }
     }
