@@ -4,6 +4,8 @@
 #include "png_io.hpp"
 #include "jpeg_io.hpp"
 
+#include <sstream>
+
 //#define USE_BOOST_GIL
 
 #ifdef USE_BOOST_GIL
