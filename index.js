@@ -20,9 +20,6 @@ Palette.fromJSON = function(json) {
 module.exports.hsl2rgb = function(h, s, l) {
     if (!s) return [l * 255, l * 255, l * 255];
 
-    var m1, m2;
-    h = h / 360;
-
     var hueToRGB = function (m1, m2, h) {
         h = (h + 1) % 1;
         if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
@@ -31,12 +28,12 @@ module.exports.hsl2rgb = function(h, s, l) {
         return m1;
     };
 
-    m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
-    m1 = l * 2 - m2;
+    var m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
+    var m1 = l * 2 - m2;
     return [
-        hueToRGB(m1, m2, h + 0.33333) * 255,
-        hueToRGB(m1, m2, h) * 255,
-        hueToRGB(m1, m2, h - 0.33333) * 255
+        parseInt(.5+hueToRGB(m1, m2, h + 0.33333) * 255,10),
+        parseInt(.5+hueToRGB(m1, m2, h) * 255,10),
+        parseInt(.5+hueToRGB(m1, m2, h - 0.33333) * 255,10)
     ];
 };
 
@@ -56,7 +53,7 @@ var rgb2hsl = function(r, g, b){
         h /= 6;
     }
 
-    return [h * 365, s * 100, l * 100];
+    return [h, s, l];
 };
 module.exports.rgb2hsl = rgb2hsl;
 
@@ -76,7 +73,7 @@ module.exports.parseTintString = function(str) {
         // Map midpoint grey to the color value, stretching values to
         // preserve white/black range. Will preserve good contrast and
         // midtone color at the cost of clipping extreme light/dark values.
-        var l = hsl[2]*0.01;
+        var l = hsl[2];
         if (l > 0.5) {
             options.y0 = 0;
             options.y1 = l * 2;
