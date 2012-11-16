@@ -251,8 +251,47 @@ Handle<Value> Blend(const Arguments& args) {
         }
 
         Local<Value> tint_val = options->Get(String::NewSymbol("tint"));
-        if (!tint_val.IsEmpty() && tint_val->IsString()) {
-            baton->tint = *String::AsciiValue(tint_val);
+        if (!tint_val.IsEmpty() && tint_val->IsObject()) {
+            Local<Object> tint = tint_val->ToObject();
+            if (!tint.IsEmpty()) {
+                baton->tint.identity = false;
+                Local<Value> hue = tint->Get(String::NewSymbol("h"));
+                if (!hue.IsEmpty() && hue->IsArray()) {
+                    Local<Array> val_array = Local<Array>::Cast(hue);
+                    if (val_array->Length() != 2) {
+                        return TYPE_EXCEPTION("h array must be a pair of values");
+                    }
+                    baton->tint.h0 = val_array->Get(0)->NumberValue();
+                    baton->tint.h1 = val_array->Get(1)->NumberValue();
+                }
+                Local<Value> sat = tint->Get(String::NewSymbol("s"));
+                if (!sat.IsEmpty() && sat->IsArray()) {
+                    Local<Array> val_array = Local<Array>::Cast(sat);
+                    if (val_array->Length() != 2) {
+                        return TYPE_EXCEPTION("s array must be a pair of values");
+                    }
+                    baton->tint.s0 = val_array->Get(0)->NumberValue();
+                    baton->tint.s1 = val_array->Get(1)->NumberValue();
+                }
+                Local<Value> light = tint->Get(String::NewSymbol("l"));
+                if (!light.IsEmpty() && light->IsArray()) {
+                    Local<Array> val_array = Local<Array>::Cast(light);
+                    if (val_array->Length() != 2) {
+                        return TYPE_EXCEPTION("l array must be a pair of values");
+                    }
+                    baton->tint.l0 = val_array->Get(0)->NumberValue();
+                    baton->tint.l1 = val_array->Get(1)->NumberValue();
+                }
+                Local<Value> alpha = tint->Get(String::NewSymbol("a"));
+                if (!alpha.IsEmpty() && alpha->IsArray()) {
+                    Local<Array> val_array = Local<Array>::Cast(alpha);
+                    if (val_array->Length() != 2) {
+                        return TYPE_EXCEPTION("a array must be a pair of values");
+                    }
+                    baton->tint.a0 = val_array->Get(0)->NumberValue();
+                    baton->tint.a1 = val_array->Get(1)->NumberValue();
+                }
+            }
         }
     }
 
@@ -517,9 +556,7 @@ WORKER_BEGIN(Work_Blend) {
     }
 
     image_data_32 image(baton->width, baton->height, (unsigned int*)target);
-
-    if (!baton->tint.empty()) {
-        // for now, just make grayscale
+    if (!baton->tint.identity) {
         for (unsigned int y = 0; y < image.height(); ++y)
         {
             unsigned int* row_from = image.getRow(y);

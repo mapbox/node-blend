@@ -83,6 +83,28 @@ v8::Handle<v8::Value> Blend(const v8::Arguments& args);
 WORKER_BEGIN(Work_Blend);
 WORKER_BEGIN(Work_AfterBlend);
 
+struct Tinter {
+    double h0;
+    double h1;
+    double s0;
+    double s1;
+    double l0;
+    double l1;
+    double a0;
+    double a1;
+    bool identity;
+
+    Tinter() :
+      h0(0),
+      h1(1),
+      s0(0),
+      s1(1),
+      l0(0),
+      l1(1),
+      a0(0),
+      a1(1),
+      identity(true) {}
+};
 
 struct BlendBaton {
 #if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0
@@ -104,7 +126,7 @@ struct BlendBaton {
     int compression;
     AlphaMode mode;
     EncoderType encoder;
-    std::string tint;
+    Tinter tint;
 
     std::ostringstream stream;
 
