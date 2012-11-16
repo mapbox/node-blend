@@ -569,10 +569,13 @@ WORKER_BEGIN(Work_Blend) {
                 unsigned b = (rgba >> 16) & 0xff;
                 unsigned a = (rgba >> 24) & 0xff;
                 double lightness = 0.30*r + 0.59*g + 0.11*b;
-                float l = baton->tint.l0 + (lightness / 255.0 * (baton->tint.l1 - baton->tint.l0));
+                //int lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
+                double l = baton->tint.l0 + (lightness / 255.0 * (baton->tint.l1 - baton->tint.l0));
                 if (l > 1) l = 1;
                 if (l < 0) l = 0;
                 hsl2rgb(baton->tint.h0,baton->tint.s0,l,r,g,b);
+                unsigned a1 = static_cast<unsigned>(std::floor(a * baton->tint.a1));
+                a = a1 > 255 ? 255 : a1;
                 row_from[x] = (a << 24) | (b << 16) | (g << 8) | (r);
             }
         }

@@ -180,5 +180,12 @@ module.exports.upgradeTintString = function(old,round) {
         l += val;
     }
     new_tint += l;
+    if (parts.length > 4) {
+        var val = parseFloat(parts[4]);
+        if (round) {
+            val = val.toFixed(round);
+        }
+        new_tint += ';' + val + 'x' + val;
+    }
     return new_tint;
 }
