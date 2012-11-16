@@ -564,20 +564,15 @@ WORKER_BEGIN(Work_Blend) {
             for (unsigned int x = 0; x < image.width(); ++x)
             {
                 unsigned rgba = row_from[x];
-                double h,s,l;
                 unsigned r = rgba & 0xff;
                 unsigned g = (rgba >> 8 ) & 0xff;
                 unsigned b = (rgba >> 16) & 0xff;
                 unsigned a = (rgba >> 24) & 0xff;
-                h = baton->tint.h0;
-                s = baton->tint.s0;
                 double lightness = 0.30*r + 0.59*g + 0.11*b;
-                float radius = baton->tint.l1 - baton->tint.l0;
-                l = baton->tint.l0 + (lightness / 255.0 * radius);
+                float l = baton->tint.l0 + (lightness / 255.0 * (baton->tint.l1 - baton->tint.l0));
                 if (l > 1) l = 1;
                 if (l < 0) l = 0;
-                //rgb2hsl(r,g,b,h,s,l);
-                hsl2rgb(h,s,l,r,g,b);
+                hsl2rgb(baton->tint.h0,baton->tint.s0,l,r,g,b);
                 row_from[x] = (a << 24) | (b << 16) | (g << 8) | (r);
             }
         }
