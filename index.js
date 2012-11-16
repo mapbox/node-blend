@@ -94,3 +94,49 @@ module.exports.parseTintStringOld = function(str) {
 
     return options;
 };
+
+module.exports.parseTintString = function(str) {
+    if (!str.length) return {};
+
+    var options = {};
+    var hex = str.match(/^#?([0-9a-f]{6})$/i);
+    if (hex) {
+        var hsl = rgb2hsl(
+            parseInt(hex[1].substring(0, 2), 16),
+            parseInt(hex[1].substring(2, 4), 16),
+            parseInt(hex[1].substring(4, 6), 16)
+        );
+        options.h = [hsl[0],hsl[0]]
+        options.s = [hsl[1],hsl[1]];
+        // Map midpoint grey to the color value, stretching values to
+        // preserve white/black range. Will preserve good contrast and
+        // midtone color at the cost of clipping extreme light/dark values.
+        var l = hsl[2];
+        var y0,y1;
+        if (l > 0.5) {
+            y0 = 0;
+            y1 = l * 2;
+        } else {
+            y0 = l - (1-l);
+            y1 = 1;
+        }
+        options.l = [y0,y1];
+    } else {
+        var parts = str.split(';');
+        var split_opt = function(opt) {
+            if (opt.indexOf('x') > -1) {
+                var pair = opt.split("x");
+                return [parseFloat(pair[0]),parseFloat(pair[1])];
+            } else {
+                var value = parseFloat(opt);
+                return [value,value];
+            }
+        }
+        if (parts.length > 0) options.h = split_opt(parts[0]);
+        if (parts.length > 1) options.s = split_opt(parts[1]);
+        if (parts.length > 2) options.l = split_opt(parts[2]);
+        if (parts.length > 3) options.a = split_opt(parts[3]);
+    }
+
+    return options;
+};

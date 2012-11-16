@@ -21,3 +21,22 @@ describe('parse tinting string - old method', function() {
         });
     });
 });
+
+
+var new_mappings = {
+    '0.083;0.5;0x1;0x0.5':{ h: [0.083,0.083], s: [0.5,0.5], l: [0,1], a: [0,0.5] },
+    '0x1;0x1;0x1;0x1':{ h: [0,1], s: [0,1], l: [0,1], a: [0,1] },
+    '.5x0;1x0':{ h: [.5,0], s: [1,0] },
+    'ffffff': { h:[0,0],s:[0,0],l:[0,2] },
+    'ff7f00': { h: [30.29738562091503/365,30.29738562091503/365], s: [1,1], l:[0,1] },
+    '#4c2d00': { h: [36.01973684210527/365,36.01973684210527/365], s: [1,1], l: [-0.7019607843137254,1] }
+}
+
+describe('parse tinting string - new method', function() {
+    Object.keys(new_mappings).forEach(function(str) {
+        it('parse ' + util.inspect(str), function() {
+            var options = blend.parseTintString(str);
+            assert.deepEqual(options, new_mappings[str]);
+        });
+    });
+});
