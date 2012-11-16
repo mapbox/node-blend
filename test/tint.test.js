@@ -25,6 +25,7 @@ describe('tinting', function() {
                 var options = {
                   width: 256,
                   height: 256,
+                  quality:256,
                   hextree:true,
                   tint: new_o
                 };
