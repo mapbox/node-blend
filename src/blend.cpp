@@ -255,6 +255,7 @@ Handle<Value> Blend(const Arguments& args) {
             Local<Object> tint = tint_val->ToObject();
             if (!tint.IsEmpty()) {
                 baton->tint.identity = false;
+                baton->reencode = true;
                 Local<Value> hue = tint->Get(String::NewSymbol("h"));
                 if (!hue.IsEmpty() && hue->IsArray()) {
                     Local<Array> val_array = Local<Array>::Cast(hue);
@@ -568,7 +569,14 @@ WORKER_BEGIN(Work_Blend) {
                 unsigned g = (rgba >> 8 ) & 0xff;
                 unsigned b = (rgba >> 16) & 0xff;
                 unsigned a = (rgba >> 24) & 0xff;
-                rgb2hsl(r,g,b,h,s,l);
+                h = baton->tint.h0;
+                s = baton->tint.s0;
+                double lightness = 0.30*r + 0.59*g + 0.11*b;
+                float radius = baton->tint.l1 - baton->tint.l0;
+                l = baton->tint.l0 + (lightness / 255.0 * radius);
+                if (l > 1) l = 1;
+                if (l < 0) l = 0;
+                //rgb2hsl(r,g,b,h,s,l);
                 hsl2rgb(h,s,l,r,g,b);
                 row_from[x] = (a << 24) | (b << 16) | (g << 8) | (r);
             }
