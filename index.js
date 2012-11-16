@@ -96,7 +96,7 @@ module.exports.parseTintStringOld = function(str) {
 };
 
 module.exports.parseTintString = function(str) {
-    if (!str.length) return {};
+    if (!str || !str.length) return {};
 
     var options = {};
     var hex = str.match(/^#?([0-9a-f]{6})$/i);
@@ -142,7 +142,7 @@ module.exports.parseTintString = function(str) {
 };
 
 module.exports.upgradeTintString = function(old,round) {
-    if (!old.length) return old;
+    if (!old || !old.length) return old;
     if(old.match(/^#?([0-9a-f]{6})$/i)) return old;
     var new_tint = '';
     var parts = old.split(';');
