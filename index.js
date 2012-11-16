@@ -140,3 +140,45 @@ module.exports.parseTintString = function(str) {
 
     return options;
 };
+
+module.exports.upgradeTintString = function(old,round) {
+    if (!old.length) return old;
+    if(old.match(/^#?([0-9a-f]{6})$/i)) return old;
+    var new_tint = '';
+    var parts = old.split(';');
+    if (parts.length > 0) {
+        var val = parseInt(parts[0],10)/365.0;
+        if (round) {
+            val = val.toFixed(round);
+        }
+        new_tint += val + 'x' + val;
+    }
+    if (parts.length > 1) {
+        var val = parseInt(parts[1],10)/100.0;
+        if (round) {
+            val = val.toFixed(round);
+        }
+        new_tint += ';' + val + 'x' + val;
+    }
+    var l = ''
+    if (parts.length > 2) {
+        var val = parseFloat(parts[2]);
+        if (round) {
+            val = val.toFixed(round);
+        }
+        if (parts.length > 3) {
+            l += ';' + val + 'x';
+        } else {
+            l += ';' + val + 'x' + val;
+        }
+    }
+    if (parts.length > 3) {
+        var val = parseFloat(parts[3]);
+        if (round) {
+            val = val.toFixed(round);
+        }
+        l += val;
+    }
+    new_tint += l;
+    return new_tint;
+}

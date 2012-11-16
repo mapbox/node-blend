@@ -15,7 +15,7 @@ var old_mappings = {
 
 describe('parse tinting string - old method', function() {
     Object.keys(old_mappings).forEach(function(str) {
-        it('parse ' + util.inspect(str), function() {
+        it('parse old ' + util.inspect(str), function() {
             var options = blend.parseTintStringOld(str);
             assert.deepEqual(options, old_mappings[str]);
         });
@@ -34,9 +34,29 @@ var new_mappings = {
 
 describe('parse tinting string - new method', function() {
     Object.keys(new_mappings).forEach(function(str) {
-        it('parse ' + util.inspect(str), function() {
+        it('parse new ' + util.inspect(str), function() {
             var options = blend.parseTintString(str);
             assert.deepEqual(options, new_mappings[str]);
+        });
+    });
+});
+
+var upgradable = {
+    '':'',
+    '20':'0.0548x0.0548',
+    '20;40':'0.0548x0.0548;0.4000x0.4000',
+    '30;84;0.5':'0.0822x0.0822;0.8400x0.8400;0.5000x0.5000',
+    '30;84;.3;.2':'0.0822x0.0822;0.8400x0.8400;0.3000x0.2000',
+    'ffffff': 'ffffff',
+    'ff7f00': 'ff7f00',
+    '#4c2d00': '#4c2d00'
+}
+
+describe('upgrading tint string', function() {
+    Object.keys(upgradable).forEach(function(str) {
+        it('upgrade ' + util.inspect(str), function() {
+            var options = blend.upgradeTintString(str,4);
+            assert.deepEqual(options, upgradable[str]);
         });
     });
 });
