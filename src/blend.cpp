@@ -442,10 +442,10 @@ inline void TintPixel(unsigned int& target, Tinter const& tint) {
     if (tint.a1 < 1) {
         a = static_cast<unsigned>(std::floor(a * tint.a1));
     }
-    if (tint.a0 > 0) {
+    /*if (tint.a0 > 0) {
         unsigned a_low = tint.a0*255.0;
         if (a < a_low) a = a_low;
-    }
+    }*/
     a = a > 255 ? 255 : a;
     target = (a << 24) | (b << 16) | (g << 8) | (r);
 }
