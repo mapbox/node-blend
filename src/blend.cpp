@@ -150,6 +150,45 @@ Handle<Value> hsl2rgb2(const Arguments& args) {
     return scope.Close(rgb);
 }
 
+void parseTintOps(Local<Object> const& tint, Tinter & tinter, std::string & msg) {
+    HandleScope scope;
+    Local<Value> hue = tint->Get(String::NewSymbol("h"));
+    if (!hue.IsEmpty() && hue->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(hue);
+        if (val_array->Length() != 2) {
+            msg = "h array must be a pair of values";
+        }
+        tinter.h0 = val_array->Get(0)->NumberValue();
+        tinter.h1 = val_array->Get(1)->NumberValue();
+    }
+    Local<Value> sat = tint->Get(String::NewSymbol("s"));
+    if (!sat.IsEmpty() && sat->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(sat);
+        if (val_array->Length() != 2) {
+            msg = "s array must be a pair of values";
+        }
+        tinter.s0 = val_array->Get(0)->NumberValue();
+        tinter.s1 = val_array->Get(1)->NumberValue();
+    }
+    Local<Value> light = tint->Get(String::NewSymbol("l"));
+    if (!light.IsEmpty() && light->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(light);
+        if (val_array->Length() != 2) {
+            msg = "l array must be a pair of values";
+        }
+        tinter.l0 = val_array->Get(0)->NumberValue();
+        tinter.l1 = val_array->Get(1)->NumberValue();
+    }
+    Local<Value> alpha = tint->Get(String::NewSymbol("a"));
+    if (!alpha.IsEmpty() && alpha->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(alpha);
+        if (val_array->Length() != 2) {
+            msg = "a array must be a pair of values";
+        }
+        tinter.a0 = val_array->Get(0)->NumberValue();
+        tinter.a1 = val_array->Get(1)->NumberValue();
+    }
+}
 
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
@@ -255,41 +294,10 @@ Handle<Value> Blend(const Arguments& args) {
             Local<Object> tint = tint_val->ToObject();
             if (!tint.IsEmpty()) {
                 baton->reencode = true;
-                Local<Value> hue = tint->Get(String::NewSymbol("h"));
-                if (!hue.IsEmpty() && hue->IsArray()) {
-                    Local<Array> val_array = Local<Array>::Cast(hue);
-                    if (val_array->Length() != 2) {
-                        return TYPE_EXCEPTION("h array must be a pair of values");
-                    }
-                    baton->tint.h0 = val_array->Get(0)->NumberValue();
-                    baton->tint.h1 = val_array->Get(1)->NumberValue();
-                }
-                Local<Value> sat = tint->Get(String::NewSymbol("s"));
-                if (!sat.IsEmpty() && sat->IsArray()) {
-                    Local<Array> val_array = Local<Array>::Cast(sat);
-                    if (val_array->Length() != 2) {
-                        return TYPE_EXCEPTION("s array must be a pair of values");
-                    }
-                    baton->tint.s0 = val_array->Get(0)->NumberValue();
-                    baton->tint.s1 = val_array->Get(1)->NumberValue();
-                }
-                Local<Value> light = tint->Get(String::NewSymbol("l"));
-                if (!light.IsEmpty() && light->IsArray()) {
-                    Local<Array> val_array = Local<Array>::Cast(light);
-                    if (val_array->Length() != 2) {
-                        return TYPE_EXCEPTION("l array must be a pair of values");
-                    }
-                    baton->tint.l0 = val_array->Get(0)->NumberValue();
-                    baton->tint.l1 = val_array->Get(1)->NumberValue();
-                }
-                Local<Value> alpha = tint->Get(String::NewSymbol("a"));
-                if (!alpha.IsEmpty() && alpha->IsArray()) {
-                    Local<Array> val_array = Local<Array>::Cast(alpha);
-                    if (val_array->Length() != 2) {
-                        return TYPE_EXCEPTION("a array must be a pair of values");
-                    }
-                    baton->tint.a0 = val_array->Get(0)->NumberValue();
-                    baton->tint.a1 = val_array->Get(1)->NumberValue();
+                std::string msg;
+                parseTintOps(tint,baton->tint,msg);
+                if (!msg.empty()) {
+                    return TYPE_EXCEPTION(msg.c_str());
                 }
             }
         }
@@ -348,6 +356,19 @@ Handle<Value> Blend(const Arguments& args) {
             }
             image->x = props->Get(String::NewSymbol("x"))->Int32Value();
             image->y = props->Get(String::NewSymbol("y"))->Int32Value();
+
+            Local<Value> tint_val = props->Get(String::NewSymbol("tint"));
+            if (!tint_val.IsEmpty() && tint_val->IsObject()) {
+                Local<Object> tint = tint_val->ToObject();
+                if (!tint.IsEmpty()) {
+                    baton->reencode = true;
+                    std::string msg;
+                    parseTintOps(tint,image->tint,msg);
+                    if (!msg.empty()) {
+                        return TYPE_EXCEPTION(msg.c_str());
+                    }
+                }
+            }
         }
 
         if (image->buffer.IsEmpty()) {
@@ -394,6 +415,28 @@ inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
     }
 }
 
+inline void TintPixel(unsigned int& target, Tinter const& tint) {
+    unsigned r = target & 0xff;
+    unsigned g = (target >> 8 ) & 0xff;
+    unsigned b = (target >> 16) & 0xff;
+    unsigned a = (target >> 24) & 0xff;
+    double lightness = 0.30*r + 0.59*g + 0.11*b;
+    //int lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
+    double l = tint.l0 + (lightness / 255.0 * (tint.l1 - tint.l0));
+    if (l > 1) l = 1;
+    if (l < 0) l = 0;
+    hsl2rgb(tint.h0,tint.s0,l,r,g,b);
+    if (tint.a1 < 1) {
+        a = static_cast<unsigned>(std::floor(a * tint.a1));
+    }
+    if (tint.a0 > 0) {
+        unsigned a_low = tint.a0*255.0;
+        if (a < a_low) a = a_low;
+    }
+    a = a > 255 ? 255 : a;
+    target = (a << 24) | (b << 16) | (g << 8) | (r);
+}
+
 
 void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     unsigned int *source = image->reader->surface;
@@ -408,9 +451,13 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     int targetX = std::max(0, image->x);
     int targetY = std::max(0, image->y);
     int targetPos = targetY * baton->width + targetX;
+    bool tinting = !image->tint.is_identity();
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
+            if (tinting) {
+                TintPixel(source[sourcePos + x],image->tint);
+            }
             Blend_CompositePixel(target[targetPos + x], source[sourcePos + x]);
         }
 
@@ -562,26 +609,7 @@ WORKER_BEGIN(Work_Blend) {
             unsigned int* row_from = image.getRow(y);
             for (unsigned int x = 0; x < image.width(); ++x)
             {
-                unsigned rgba = row_from[x];
-                unsigned r = rgba & 0xff;
-                unsigned g = (rgba >> 8 ) & 0xff;
-                unsigned b = (rgba >> 16) & 0xff;
-                unsigned a = (rgba >> 24) & 0xff;
-                double lightness = 0.30*r + 0.59*g + 0.11*b;
-                //int lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
-                double l = baton->tint.l0 + (lightness / 255.0 * (baton->tint.l1 - baton->tint.l0));
-                if (l > 1) l = 1;
-                if (l < 0) l = 0;
-                hsl2rgb(baton->tint.h0,baton->tint.s0,l,r,g,b);
-                if (baton->tint.a1 < 1) {
-                    a = static_cast<unsigned>(std::floor(a * baton->tint.a1));
-                }
-                if (baton->tint.a0 > 0) {
-                    unsigned a_low = baton->tint.a0*255.0;
-                    if (a < a_low) a = a_low;
-                }
-                a = a > 255 ? 255 : a;
-                row_from[x] = (a << 24) | (b << 16) | (g << 8) | (r);
+                TintPixel(row_from[x],baton->tint);
             }
         }
     }
