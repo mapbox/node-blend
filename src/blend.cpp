@@ -84,21 +84,34 @@ void rgb2hsl(unsigned red, unsigned green, unsigned blue,
     }
 }
 
-double hueToRGB(double m1, double m2, double h) {
-    h = fmod(h+1,1);
+inline void faster_fmod(const double n, const double d, double & q)
+{
+  if (d == 0.0) {
+    q = 0;
+  } else {
+      q = n/d;
+      if (q < 0.0)
+        q -= 1.0;
+      q = n - static_cast<unsigned>(q)*d;
+  }
+}
+
+
+inline double hueToRGB(double m1, double m2, double h) {
+    // std::fmod is insanely slow - why?
+    //h = fmod(h+1,1);
+    faster_fmod(h+1,1,h);
     if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
     if (h * 2 < 1) return m2;
     if (h * 3 < 2) return m1 + (m2 - m1) * (0.66666 - h) * 6;
     return m1;
 };
 
-void hsl2rgb(double h, double s, double l,
+inline void hsl2rgb(double h, double s, double l,
              unsigned & r, unsigned & g, unsigned & b) {
     if (!s) {
         r = g = b = static_cast<unsigned>(l * 255);
     }
-
-
     double m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
     double m1 = l * 2 - m2;
     r = static_cast<unsigned>(hueToRGB(m1, m2, h + 0.33333) * 255);
