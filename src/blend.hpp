@@ -35,6 +35,38 @@
 
 typedef v8::Persistent<v8::Object> PersistentObject;
 
+struct Tinter {
+    double h0;
+    double h1;
+    double s0;
+    double s1;
+    double l0;
+    double l1;
+    double a0;
+    double a1;
+
+    Tinter() :
+      h0(0),
+      h1(1),
+      s0(0),
+      s1(1),
+      l0(0),
+      l1(1),
+      a0(0),
+      a1(1) {}
+
+    bool is_identity() {
+        return (h0 == 0 &&
+                h1 == 1 &&
+                s0 == 0 &&
+                s1 == 1 &&
+                l0 == 0 &&
+                l1 == 1 &&
+                a0 == 0 &&
+                a1 == 1);
+    }
+};
+
 struct Image {
     Image() :
         data(NULL),
@@ -42,12 +74,14 @@ struct Image {
         x(0),
         y(0),
         width(0),
-        height(0) {}
+        height(0),
+        tint() {}
     PersistentObject buffer;
     unsigned char *data;
     size_t dataLength;
     int x, y;
     int width, height;
+    Tinter tint;
     std::auto_ptr<ImageReader> reader;
 };
 
@@ -82,29 +116,6 @@ enum EncoderType {
 v8::Handle<v8::Value> Blend(const v8::Arguments& args);
 WORKER_BEGIN(Work_Blend);
 WORKER_BEGIN(Work_AfterBlend);
-
-struct Tinter {
-    double h0;
-    double h1;
-    double s0;
-    double s1;
-    double l0;
-    double l1;
-    double a0;
-    double a1;
-    bool identity;
-
-    Tinter() :
-      h0(0),
-      h1(1),
-      s0(0),
-      s1(1),
-      l0(0),
-      l1(1),
-      a0(0),
-      a1(1),
-      identity(true) {}
-};
 
 struct BlendBaton {
 #if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0

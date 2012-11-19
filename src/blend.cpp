@@ -254,7 +254,6 @@ Handle<Value> Blend(const Arguments& args) {
         if (!tint_val.IsEmpty() && tint_val->IsObject()) {
             Local<Object> tint = tint_val->ToObject();
             if (!tint.IsEmpty()) {
-                baton->tint.identity = false;
                 baton->reencode = true;
                 Local<Value> hue = tint->Get(String::NewSymbol("h"));
                 if (!hue.IsEmpty() && hue->IsArray()) {
@@ -557,7 +556,7 @@ WORKER_BEGIN(Work_Blend) {
     }
 
     image_data_32 image(baton->width, baton->height, (unsigned int*)target);
-    if (!baton->tint.identity) {
+    if (!baton->tint.is_identity()) {
         for (unsigned int y = 0; y < image.height(); ++y)
         {
             unsigned int* row_from = image.getRow(y);
@@ -574,8 +573,14 @@ WORKER_BEGIN(Work_Blend) {
                 if (l > 1) l = 1;
                 if (l < 0) l = 0;
                 hsl2rgb(baton->tint.h0,baton->tint.s0,l,r,g,b);
-                unsigned a1 = static_cast<unsigned>(std::floor(a * baton->tint.a1));
-                a = a1 > 255 ? 255 : a1;
+                if (baton->tint.a1 < 1) {
+                    a = static_cast<unsigned>(std::floor(a * baton->tint.a1));
+                }
+                if (baton->tint.a0 > 0) {
+                    unsigned a_low = baton->tint.a0*255.0;
+                    if (a < a_low) a = a_low;
+                }
+                a = a > 255 ? 255 : a;
                 row_from[x] = (a << 24) | (b << 16) | (g << 8) | (r);
             }
         }
