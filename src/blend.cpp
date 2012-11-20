@@ -201,6 +201,10 @@ void parseTintOps(Local<Object> const& tint, Tinter & tinter, std::string & msg)
         tinter.a0 = val_array->Get(0)->NumberValue();
         tinter.a1 = val_array->Get(1)->NumberValue();
     }
+    Local<Value> debug = tint->Get(String::NewSymbol("debug"));
+    if (!debug.IsEmpty()) {
+        tinter.debug = debug->BooleanValue();
+    }
 }
 
 Handle<Value> Blend(const Arguments& args) {
