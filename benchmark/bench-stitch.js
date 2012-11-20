@@ -6,24 +6,27 @@ var Queue = require('./queue');
 var iterations = 500;
 var concurrency = 10;
 
+var tint; // be default, no tinting
+// use this to test application of tinting per image
+//var tint = {h:[.5,.5]};
 
 var images = [
-    { buffer: fs.readFileSync('test/fixture/5241-12663.png'), x: -43, y: -120 },
-    { buffer: fs.readFileSync('test/fixture/5242-12663.png'), x: -43+256, y: -120 },
-    { buffer: fs.readFileSync('test/fixture/5243-12663.png'), x: -43+512, y: -120 },
-    { buffer: fs.readFileSync('test/fixture/5244-12663.png'), x: -43+768, y: -120 },
-    { buffer: fs.readFileSync('test/fixture/5241-12664.png'), x: -43, y: -120+256 },
-    { buffer: fs.readFileSync('test/fixture/5242-12664.png'), x: -43+256, y: -120+256 },
-    { buffer: fs.readFileSync('test/fixture/5243-12664.png'), x: -43+512, y: -120+256 },
-    { buffer: fs.readFileSync('test/fixture/5244-12664.png'), x: -43+768, y: -120+256 },
-    { buffer: fs.readFileSync('test/fixture/5241-12665.png'), x: -43, y: -120+512 },
-    { buffer: fs.readFileSync('test/fixture/5242-12665.png'), x: -43+256, y: -120+512 },
-    { buffer: fs.readFileSync('test/fixture/5243-12665.png'), x: -43+512, y: -120+512 },
-    { buffer: fs.readFileSync('test/fixture/5244-12665.png'), x: -43+768, y: -120+512 },
-    { buffer: fs.readFileSync('test/fixture/5241-12666.png'), x: -43, y: -120+768 },
-    { buffer: fs.readFileSync('test/fixture/5242-12666.png'), x: -43+256, y: -120+768 },
-    { buffer: fs.readFileSync('test/fixture/5243-12666.png'), x: -43+512, y: -120+768 },
-    { buffer: fs.readFileSync('test/fixture/5244-12666.png'), x: -43+768, y: -120+768 }
+    { buffer: fs.readFileSync('test/fixture/5241-12663.png'), tint:tint, x: -43, y: -120 },
+    { buffer: fs.readFileSync('test/fixture/5242-12663.png'), tint:tint, x: -43+256, y: -120 },
+    { buffer: fs.readFileSync('test/fixture/5243-12663.png'), tint:tint, x: -43+512, y: -120 },
+    { buffer: fs.readFileSync('test/fixture/5244-12663.png'), tint:tint, x: -43+768, y: -120 },
+    { buffer: fs.readFileSync('test/fixture/5241-12664.png'), tint:tint, x: -43, y: -120+256 },
+    { buffer: fs.readFileSync('test/fixture/5242-12664.png'), tint:tint, x: -43+256, y: -120+256 },
+    { buffer: fs.readFileSync('test/fixture/5243-12664.png'), tint:tint, x: -43+512, y: -120+256 },
+    { buffer: fs.readFileSync('test/fixture/5244-12664.png'), tint:tint, x: -43+768, y: -120+256 },
+    { buffer: fs.readFileSync('test/fixture/5241-12665.png'), tint:tint, x: -43, y: -120+512 },
+    { buffer: fs.readFileSync('test/fixture/5242-12665.png'), tint:tint, x: -43+256, y: -120+512 },
+    { buffer: fs.readFileSync('test/fixture/5243-12665.png'), tint:tint, x: -43+512, y: -120+512 },
+    { buffer: fs.readFileSync('test/fixture/5244-12665.png'), tint:tint, x: -43+768, y: -120+512 },
+    { buffer: fs.readFileSync('test/fixture/5241-12666.png'), tint:tint, x: -43, y: -120+768 },
+    { buffer: fs.readFileSync('test/fixture/5242-12666.png'), tint:tint, x: -43+256, y: -120+768 },
+    { buffer: fs.readFileSync('test/fixture/5243-12666.png'), tint:tint, x: -43+512, y: -120+768 },
+    { buffer: fs.readFileSync('test/fixture/5244-12666.png'), tint:tint, x: -43+768, y: -120+768 }
 ];
 
 var written = false;
