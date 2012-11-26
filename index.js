@@ -55,6 +55,9 @@ var rgb2hsl = function(r, g, b){
         h /= 6;
     }
 
+    h = h > 1 ? 1 : h < 0 ? 0 : h;
+    s = s > 1 ? 1 : s < 0 ? 0 : s;
+    l = l > 1 ? 1 : l < 0 ? 0 : l;
     return [h, s, l];
 };
 module.exports.rgb2hsl = rgb2hsl;
