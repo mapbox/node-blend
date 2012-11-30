@@ -5,6 +5,7 @@ var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
 
 var image_magick_available = true;
+var overwrite = false;
 
 exec('compare -h', function(error, stdout, stderr) {
     if (error !== null) {
@@ -13,10 +14,17 @@ exec('compare -h', function(error, stdout, stderr) {
 });
 
 exports.imageEqualsFile = function(buffer, file, callback) {
+    file = path.resolve(file);
+    if (overwrite) {
+        var err = fs.writeFileSync(file, buffer);
+        if (err) {
+            err.similarity = 0;
+        }
+        return callback(err);
+    }
     if (!image_magick_available) {
         throw new Error("imagemagick 'compare' tool is not available, please install before running tests");
     }
-    file = path.resolve(file);
     var compare = spawn('compare', ['-metric', 'PSNR', '-', file, '/dev/null' ]);
 
     var error = '';
