@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <tr1/memory>
+#include <tr1/unordered_map>
 
 #include "reader.hpp"
 #include "palette.hpp"
@@ -35,6 +36,9 @@
 
 typedef v8::Persistent<v8::Object> PersistentObject;
 
+typedef std::tr1::unordered_map<unsigned,unsigned> color_cache;
+typedef std::tr1::unordered_map<std::string,color_cache> hsl_cache;
+
 struct Tinter {
     double h0;
     double h1;
@@ -44,6 +48,7 @@ struct Tinter {
     double l1;
     double a0;
     double a1;
+    color_cache cache;
     bool debug;
 
     Tinter() :
@@ -55,6 +60,7 @@ struct Tinter {
       l1(1),
       a0(0),
       a1(1),
+      cache(255),
       debug(false) {}
 
     bool is_identity() {

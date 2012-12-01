@@ -17,6 +17,8 @@
 using namespace v8;
 using namespace node;
 
+static hsl_cache hsl_colors;
+
 unsigned int hexToUInt32Color(char *hex) {
     if (!hex) return 0;
     if (hex[0] == '#') hex++;
@@ -120,6 +122,33 @@ inline void hsl2rgb(double h, double s, double l,
 }
 
 #endif
+
+void get_color_cache(Tinter & tint, hsl_cache & lut) {
+    std::ostringstream key;
+    key << std::fixed
+        << "-" << tint.h0
+        << "-" << tint.s0
+        << "-" << tint.l0
+        << "-" << tint.l1;
+    typedef hsl_cache::const_iterator iterator_type;
+    iterator_type itr = lut.find(key.str());
+    if (itr != lut.end()) {
+        tint.cache = itr->second;
+    } else {
+        color_cache & cache = tint.cache;
+        unsigned r;
+        unsigned g;
+        unsigned b;
+        for (unsigned i = 0; i < 256;++i) {
+            double l = tint.l0 + (i / 255.0 * (tint.l1 - tint.l0));
+            if (l > 1) l = 1;
+            if (l < 0) l = 0;
+            hsl2rgb(tint.h0,tint.s0,l,r,g,b);
+            cache.insert(std::make_pair(i,(b << 16) | (g << 8) | r));
+        }
+        lut.insert(std::make_pair(key.str(),cache));
+    }
+}
 
 Handle<Value> rgb2hsl2(const Arguments& args) {
     HandleScope scope;
@@ -381,6 +410,9 @@ Handle<Value> Blend(const Arguments& args) {
                     baton->reencode = true;
                     std::string msg;
                     parseTintOps(tint,image->tint,msg);
+                    if (!image->tint.is_identity()) {
+                        get_color_cache(image->tint,hsl_colors);
+                    }
                     if (!msg.empty()) {
                         return TYPE_EXCEPTION(msg.c_str());
                     }
@@ -437,12 +469,21 @@ inline void TintPixel(unsigned int& target, Tinter const& tint) {
     unsigned g = (target >> 8 ) & 0xff;
     unsigned b = (target >> 16) & 0xff;
     unsigned a = (target >> 24) & 0xff;
-    double lightness = 0.30*r + 0.59*g + 0.11*b;
-    //int lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
-    double l = tint.l0 + (lightness / 255.0 * (tint.l1 - tint.l0));
-    if (l > 1) l = 1;
-    if (l < 0) l = 0;
-    hsl2rgb(tint.h0,tint.s0,l,r,g,b);
+    unsigned lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
+    typedef color_cache::const_iterator iterator_type;
+    color_cache const& cache = tint.cache;
+    iterator_type itr = cache.find(lightness);
+    if (itr != cache.end())
+    {
+        r = itr->second & 0xff;
+        g = (itr->second >> 8 ) & 0xff;
+        b = (itr->second >> 16 ) & 0xff;
+    } else {
+        double l = tint.l0 + (lightness / 255.0 * (tint.l1 - tint.l0));
+        if (l > 1) l = 1;
+        if (l < 0) l = 0;
+        hsl2rgb(tint.h0,tint.s0,l,r,g,b);
+    }
     if (tint.a1 < 1) {
         a = static_cast<unsigned>(std::floor(a * tint.a1));
     }
