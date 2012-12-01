@@ -26,12 +26,26 @@ describe('tinting', function() {
                   width: 256,
                   height: 256,
                   quality:256,
-                  hextree:true,
-                  tint: new_o
+                  hextree:true
                 };
-                tint([source], options, function(err,data) {
+                // tint setting per image
+                tint([{buffer:source,tint:new_o}], options, function(err,data) {
                     var filepath = './test/tinted/' + file;
-                    utilities.imageEqualsFile(data, filepath, done);
+                    utilities.imageEqualsFile(data, filepath, function(err) {
+                        if (err) throw err;
+                        // tint setting after all compositing is done
+                        var options2 = {
+                          width: 256,
+                          height: 256,
+                          quality:256,
+                          hextree:true,
+                          tint:new_o
+                        };
+                        tint([source], options2, function(err,data) {
+                            var filepath = './test/tinted/' + file;
+                            utilities.imageEqualsFile(data, filepath, done);
+                        });
+                    });
                 });
             });
         });
