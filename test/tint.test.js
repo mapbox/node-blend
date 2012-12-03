@@ -20,7 +20,7 @@ describe('tinting', function() {
             if ('y1' in o) testName += ', y1=' + o.y1.toFixed(2);
             if ('opacity' in o) testName += ', opacity=' + o.opacity.toFixed(2);
 
-            it(testName, function(done) {
+            it(testName+"tint at end", function(done) {
                 var source = fs.readFileSync('./test/source/' + name + '.png');
                 var options = {
                   width: 256,
@@ -31,21 +31,23 @@ describe('tinting', function() {
                 // tint setting per image
                 tint([{buffer:source,tint:new_o}], options, function(err,data) {
                     var filepath = './test/tinted/' + file;
-                    utilities.imageEqualsFile(data, filepath, function(err) {
-                        if (err) throw err;
-                        // tint setting after all compositing is done
-                        var options2 = {
-                          width: 256,
-                          height: 256,
-                          quality:256,
-                          hextree:true,
-                          tint:new_o
-                        };
-                        tint([source], options2, function(err,data) {
-                            var filepath = './test/tinted/' + file;
-                            utilities.imageEqualsFile(data, filepath, done);
-                        });
-                    });
+                    utilities.imageEqualsFile(data, filepath, done);
+                });
+            });
+
+            it(testName+"tint per image", function(done) {
+                var source = fs.readFileSync('./test/source/' + name + '.png');
+                // tint setting after all compositing is done
+                var options2 = {
+                  width: 256,
+                  height: 256,
+                  quality:256,
+                  hextree:true,
+                  tint:new_o
+                };
+                tint([source], options2, function(err,data) {
+                    var filepath = './test/tinted/' + file;
+                    utilities.imageEqualsFile(data, filepath, done);
                 });
             });
         });
