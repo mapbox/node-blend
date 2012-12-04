@@ -20,7 +20,7 @@ describe('tinting', function() {
             if ('y1' in o) testName += ', y1=' + o.y1.toFixed(2);
             if ('opacity' in o) testName += ', opacity=' + o.opacity.toFixed(2);
 
-            it(testName+"tint at end", function(done) {
+            it(testName+" (tint per image)", function(done) {
                 var source = fs.readFileSync('./test/source/' + name + '.png');
                 var options = {
                   width: 256,
@@ -35,7 +35,7 @@ describe('tinting', function() {
                 });
             });
 
-            it(testName+"tint per image", function(done) {
+            /*it(testName+" (tint at end)", function(done) {
                 var source = fs.readFileSync('./test/source/' + name + '.png');
                 // tint setting after all compositing is done
                 var options2 = {
@@ -50,5 +50,6 @@ describe('tinting', function() {
                     utilities.imageEqualsFile(data, filepath, done);
                 });
             });
+            */
         });
 });
