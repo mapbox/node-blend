@@ -253,7 +253,7 @@ public:
         if (it == color_hashmap_.end())
         {
             int dr, dg, db, da;
-            int dist, newdist;
+            int dist, newdist, dist_add;
 
             // find closest match based on mean of r,g,b,a
 #if BOOST_VERSION >= 104600
@@ -280,8 +280,9 @@ public:
                 dg = sorted_pal_[i].g - c.g;
                 db = sorted_pal_[i].b - c.b;
                 da = sorted_pal_[i].a - a;
+                dist_add = dr+db+dg+da;
                 // stop criteria based on properties of used sorting
-                if (((dr+db+dg+da) * (dr+db+dg+da) / 4 > dist))
+                if ((dist_add * dist_add / 4 > dist))
                 {
                     break;
                 }
@@ -298,8 +299,9 @@ public:
                 dg = sorted_pal_[i].g - c.g;
                 db = sorted_pal_[i].b - c.b;
                 da = sorted_pal_[i].a - a;
+                dist_add = dr+db+dg+da;
                 // stop criteria based on properties of used sorting
-                if ((dr+db+dg+da) * (dr+db+dg+da) / 4 > dist)
+                if (dist_add * dist_add / 4 > dist)
                 {
                     break;
                 }
