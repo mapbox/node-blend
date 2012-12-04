@@ -505,13 +505,7 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             unsigned int& source_pixel = source[sourcePos + x];
-            unsigned r = source_pixel & 0xff;
-            unsigned g = (source_pixel >> 8 ) & 0xff;
-            unsigned b = (source_pixel >> 16) & 0xff;
             unsigned a = (source_pixel >> 24) & 0xff;
-            if (tinting) {
-                TintPixel(r,g,b,image->tint);
-            }
             if (set_alpha) {
                 if (image->tint.a1 < 1) {
                     a = static_cast<unsigned>(std::floor(a * image->tint.a1));
@@ -521,6 +515,12 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
                     if (a < a_low) a = a_low;
                 }*/
                 a = a > 255 ? 255 : a;
+            }
+            unsigned r = source_pixel & 0xff;
+            unsigned g = (source_pixel >> 8 ) & 0xff;
+            unsigned b = (source_pixel >> 16) & 0xff;
+            if (a >= 0.01 && tinting) {
+                TintPixel(r,g,b,image->tint);
             }
             source_pixel = (a << 24) | (b << 16) | (g << 8) | (r);
             Blend_CompositePixel(target[targetPos + x], source_pixel);
