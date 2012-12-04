@@ -69,9 +69,21 @@ struct Tinter {
                 s0 == 0 &&
                 s1 == 1 &&
                 l0 == 0 &&
-                l1 == 1 &&
-                a0 == 0 &&
+                l1 == 1);
+    }
+
+    bool is_alpha_identity() {
+        return (a0 == 0 &&
                 a1 == 1);
+    }
+
+    std::string to_string() {
+        std::ostringstream s;
+        s << h0 << "x" << h1 << ";"
+          << s0 << "x" << s1 << ";"
+          << l0 << "x" << l1 << ";"
+          << a0 << "x" << a1;
+        return s.str();
     }
 };
 

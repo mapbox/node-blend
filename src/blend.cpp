@@ -464,11 +464,10 @@ inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
     }
 }
 
-inline void TintPixel(unsigned int& target, Tinter const& tint) {
-    unsigned r = target & 0xff;
-    unsigned g = (target >> 8 ) & 0xff;
-    unsigned b = (target >> 16) & 0xff;
-    unsigned a = (target >> 24) & 0xff;
+inline void TintPixel(unsigned & r,
+                      unsigned & g,
+                      unsigned & b,
+                      Tinter const& tint) {
     unsigned lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
     typedef color_cache::const_iterator iterator_type;
     color_cache const& cache = tint.cache;
@@ -484,15 +483,6 @@ inline void TintPixel(unsigned int& target, Tinter const& tint) {
         if (l < 0) l = 0;
         hsl2rgb(tint.h0,tint.s0,l,r,g,b);
     }
-    if (tint.a1 < 1) {
-        a = static_cast<unsigned>(std::floor(a * tint.a1));
-    }
-    /*if (tint.a0 > 0) {
-        unsigned a_low = tint.a0*255.0;
-        if (a < a_low) a = a_low;
-    }*/
-    a = a > 255 ? 255 : a;
-    target = (a << 24) | (b << 16) | (g << 8) | (r);
 }
 
 
@@ -510,13 +500,30 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     int targetY = std::max(0, image->y);
     int targetPos = targetY * baton->width + targetX;
     bool tinting = !image->tint.is_identity();
+    bool set_alpha = !image->tint.is_alpha_identity();
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
+            unsigned int& source_pixel = source[sourcePos + x];
+            unsigned r = source_pixel & 0xff;
+            unsigned g = (source_pixel >> 8 ) & 0xff;
+            unsigned b = (source_pixel >> 16) & 0xff;
+            unsigned a = (source_pixel >> 24) & 0xff;
             if (tinting) {
-                TintPixel(source[sourcePos + x],image->tint);
+                TintPixel(r,g,b,image->tint);
             }
-            Blend_CompositePixel(target[targetPos + x], source[sourcePos + x]);
+            if (set_alpha) {
+                if (image->tint.a1 < 1) {
+                    a = static_cast<unsigned>(std::floor(a * image->tint.a1));
+                }
+                /*if (tint.a0 > 0) {
+                    unsigned a_low = tint.a0*255.0;
+                    if (a < a_low) a = a_low;
+                }*/
+                a = a > 255 ? 255 : a;
+            }
+            source_pixel = (a << 24) | (b << 16) | (g << 8) | (r);
+            Blend_CompositePixel(target[targetPos + x], source_pixel);
         }
 
         sourcePos += image->width;
@@ -661,7 +668,7 @@ WORKER_BEGIN(Work_Blend) {
     }
 
     image_data_32 image(baton->width, baton->height, (unsigned int*)target);
-    if (!baton->tint.is_identity()) {
+    /*if (!baton->tint.is_identity()) {
         for (unsigned int y = 0; y < image.height(); ++y)
         {
             unsigned int* row_from = image.getRow(y);
@@ -670,7 +677,7 @@ WORKER_BEGIN(Work_Blend) {
                 TintPixel(row_from[x],baton->tint);
             }
         }
-    }
+    }*/
 
     Blend_Encode(image, baton, alpha);
     free(target);
