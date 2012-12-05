@@ -63,11 +63,14 @@ std::size_t rgba::hash_func::operator()(rgba const& p) const
 rgba_palette::rgba_palette(std::string const& pal, palette_type type)
     : colors_(0)
 {
+    color_hashmap_.set_empty_key(-1);
     parse(pal, type);
 }
 
 rgba_palette::rgba_palette()
-    : colors_(0) {}
+    : colors_(0) {
+        color_hashmap_.set_empty_key(-1);
+    }
 
 const std::vector<rgb>& rgba_palette::palette()
 {

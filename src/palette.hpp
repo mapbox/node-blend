@@ -34,6 +34,7 @@
 #include <iostream>
 #include <tr1/memory>
 #include <tr1/unordered_map>
+#include <google/dense_hash_map>
 
 
 #define U2RED(x) ((x)&0xff)
@@ -90,6 +91,11 @@ struct rgba
         return r | (g << 8) | (b << 16) | (a << 24);
     }
 
+    inline unsigned int encode() const
+    {
+        return (r | (g << 8) | (b << 16) | (a << 24));
+    }
+
     // ordering by mean(a,r,g,b), a, r, g, b
     struct mean_sort_cmp
     {
@@ -103,7 +109,8 @@ struct rgba
 };
 
 
-typedef std::tr1::unordered_map<unsigned, unsigned char> rgba_hash_table;
+//typedef std::tr1::unordered_map<unsigned, unsigned char> rgba_hash_table;
+typedef google::dense_hash_map<int, unsigned char> rgba_hash_table;
 
 
 class rgba_palette {
@@ -128,7 +135,7 @@ public:
         return sorted_pal_;
     }
     unsigned char quantize(rgba const& c) const;
-    unsigned char quantize(unsigned const& c) const
+    /*unsigned char quantize(unsigned const& c) const
     {
         rgba_hash_table::const_iterator it = color_hashmap_.find(c);
         if (it != color_hashmap_.end())
@@ -138,7 +145,7 @@ public:
         else {
             return quantize(rgba(U2RED(c), U2GREEN(c), U2BLUE(c), U2ALPHA(c)));
         }
-    }
+    }*/
 
     bool valid() const;
 
