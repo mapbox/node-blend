@@ -42,6 +42,7 @@
 #include <algorithm>
 #include <cmath>
 #include <tr1/unordered_map>
+#include <sparsehash/dense_hash_map>
 
 struct RGBAPolicy
 {
@@ -130,7 +131,7 @@ class hextree
     // index remaping of sorted_pal_ indexes to indexes of returned image palette
     std::vector<unsigned> pal_remap_;
     // rgba hashtable for quantization
-    typedef std::tr1::unordered_map<rgba, int, rgba::hash_func> rgba_hash_table;
+    typedef google::dense_hash_map<int, int> rgba_hash_table;
     mutable rgba_hash_table color_hashmap_;
     // gamma correction to prioritize dark colors (>1.0)
     double gamma_;
@@ -151,9 +152,11 @@ public:
           colors_(0),
           has_holes_(false),
           root_(new node()),
+          color_hashmap_(16384),
           trans_mode_(FULL_TRANSPARENCY)
     {
         setGamma(g);
+        color_hashmap_.set_empty_key(-1);
     }
 
     ~hextree()
@@ -236,9 +239,9 @@ public:
     }
 
     // return color index in returned earlier palette
-    int quantize(rgba const& c) const
+    int quantize(unsigned val) const
     {
-        byte a = preprocessAlpha(c.a);
+        byte a = preprocessAlpha(U2ALPHA(val));
         unsigned ind=0;
         if (a < InsertPolicy::MIN_ALPHA || colors_ == 0)
         {
@@ -249,9 +252,10 @@ public:
             return pal_remap_[has_holes_?1:0];
         }
 
-        rgba_hash_table::iterator it = color_hashmap_.find(c);
+        rgba_hash_table::iterator it = color_hashmap_.find(val);
         if (it == color_hashmap_.end())
         {
+            rgba c(val);
             int dr, dg, db, da;
             int dist, newdist, dist_add;
 
@@ -313,7 +317,7 @@ public:
                 }
             }
             //put found index in hash map
-            color_hashmap_[c] = ind;
+            color_hashmap_[val] = ind;
         }
         else
         {
