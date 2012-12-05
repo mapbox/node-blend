@@ -158,10 +158,12 @@ def configure(conf):
     if not found_png:
         _conf_exit(conf, 'png not found: searched %s \nuse --with-png to point to the location of your png libs and headers' % png_search_paths)
 
+    conf.env.append_value("CXXFLAGS","-I../deps")
+
 
 def build(bld):
     obj = bld.new_task_gen("cxx", "shlib", "node_addon")
-    obj.cxxflags = ["-O3", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-Wno-unused-value", "-Wno-unused-function", "-mfpmath=sse", "-march=core2",
+    obj.cxxflags = ["-O3", "-DNDEBUG", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-Wno-unused-value", "-Wno-unused-function", "-mfpmath=sse", "-march=core2",
         "-funroll-loops", "-fomit-frame-pointer"]
     obj.target = TARGET
     obj.source = ["src/reader.cpp", "src/blend.cpp", "src/palette.cpp"]
