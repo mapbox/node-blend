@@ -29,7 +29,7 @@
 #include "octree.hpp"
 #include "hextree.hpp"
 #include "blend.hpp"
-#include "miniz_png.hpp"
+//#include "miniz_png.hpp"
 
 // zlib
 #include <zlib.h>
@@ -63,7 +63,7 @@ void save_as_png(T1 & file,
                 int alpha = false,
                 bool use_miniz = false)
 {
-    if (use_miniz) {
+    /*if (use_miniz) {
         MiniZ::PNGWriter writer(compression);
         if (alpha) {
             writer.writeIHDR(image.width(), image.height(), 32);
@@ -75,7 +75,7 @@ void save_as_png(T1 & file,
         writer.writeIEND();
         writer.toStream(file);
         return;
-    }
+    }*/
 
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
@@ -233,7 +233,7 @@ void save_as_png(T & file, std::vector<rgb> const& palette,
                  std::vector<unsigned> const&alpha,
                  bool use_miniz)
 {
-    if (use_miniz) {
+    /*if (use_miniz) {
         MiniZ::PNGWriter writer(compression);
         // image.width()/height() does not reflect the actual image dimensions; it
         // refers to the quantized scanlines.
@@ -244,7 +244,7 @@ void save_as_png(T & file, std::vector<rgb> const& palette,
         writer.writeIEND();
         writer.toStream(file);
         return;
-    }
+    }*/
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                 error_ptr,0, 0);
@@ -584,7 +584,7 @@ void save_as_png8_hex(T1 & file, T2 const& image, int colors = 256,
 }
 
 template <typename T1, typename T2>
-void save_as_png8_pal(T1 & file, T2 const& image, rgba_palette const& pal,
+void save_as_png8_pal(T1 & file, T2 const& image, rgba_palette & pal,
                       int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY, bool use_miniz = false)
 {
     save_as_png8<T1, T2, rgba_palette>(file, image, pal, pal.palette(), pal.alphaTable(), compression, strategy, use_miniz);

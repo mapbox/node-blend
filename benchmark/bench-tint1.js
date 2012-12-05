@@ -17,22 +17,45 @@ var images = [
 
 var written = false;
 
-var queue = new Queue(function(i, done) {
-    blend(images, {
-        width: 256,
-        height: 256,
-        quality: 256,
-        encoder:'libpng',
-        mode:'hextree'
-    }, function(err, data) {
-        if (!written) {
-            fs.writeFileSync('./out-tint1.png', data);
-            written = true;
-        }
-        done();
-    });
-}, concurrency);
+var new_method = true;
 
+var queue;
+
+if (new_method) {
+    queue = new Queue(function(i, done) {
+        blend(images, {
+            width: 256,
+            height: 256,
+            quality: 256,
+            encoder:'libpng',
+            mode:'raw'
+        }, function(err, pixels, palette) {
+            palette.encode(pixels,function(err,data) {
+                if (!written) {
+                    fs.writeFileSync('./out-tint1.png', data);
+                    written = true;
+                }
+                done();
+            });
+        });
+    }, concurrency);
+} else {
+    queue = new Queue(function(i, done) {
+        blend(images, {
+            width: 256,
+            height: 256,
+            quality: 256,
+            encoder:'libpng',
+            mode:'hextree'
+        }, function(err, data) {
+            if (!written) {
+                fs.writeFileSync('./out-tint1.png', data);
+                written = true;
+            }
+            done();
+        });
+    }, concurrency);
+}
 queue.on('empty', function() {
     var msec = Date.now() - start;
     console.warn('Iterations: %d', iterations);

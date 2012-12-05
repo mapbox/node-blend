@@ -314,6 +314,10 @@ Handle<Value> Blend(const Arguments& args) {
                 strcmp(*String::AsciiValue(mode_val), "h") == 0) {
                 baton->mode = BLEND_MODE_HEXTREE;
             }
+            else if (strcmp(*String::AsciiValue(mode_val), "raw") == 0 ||
+                strcmp(*String::AsciiValue(mode_val), "h") == 0) {
+                baton->mode = BLEND_MODE_RAW;
+            }
         }
 
         Local<Value> encoder_val = options->Get(String::NewSymbol("encoder"));
@@ -325,7 +329,7 @@ Handle<Value> Blend(const Arguments& args) {
         }
 
         int max_compression = Z_BEST_COMPRESSION;
-        if (baton->encoder == BLEND_ENCODER_MINIZ) max_compression = MZ_UBER_COMPRESSION;
+        //if (baton->encoder == BLEND_ENCODER_MINIZ) max_compression = MZ_UBER_COMPRESSION;
         baton->compression = options->Get(String::NewSymbol("compression"))->Int32Value();
         if (baton->compression <= 0) baton->compression = Z_DEFAULT_COMPRESSION;
         if (baton->compression > max_compression) {
@@ -549,6 +553,40 @@ void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alpha) {
                 // Paletted PNG.
                 if (alpha && baton->mode == BLEND_MODE_HEXTREE) {
                     save_as_png8_hex(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, gamma, use_miniz);
+                } else if (baton->mode == BLEND_MODE_RAW) {
+                      palette_ptr pal_obj(new rgba_palette());
+                      std::vector<rgb> & palette = pal_obj->palette2();
+                      std::vector<unsigned> & alphaTable = pal_obj->alphaTable2();
+                      std::vector<rgba> & sorted_pal = pal_obj->sorted2();
+                      unsigned width = image.width();
+                      unsigned height = image.height();
+                      // structure for color quantization
+                      hextree<rgba> tree(baton->quality);
+                      if (trans_mode >= 0)
+                          tree.setTransMode(trans_mode);
+                      if (gamma > 0)
+                          tree.setGamma(gamma);
+                      for (unsigned y = 0; y < height; ++y)
+                      {
+                          image_data_32::pixel_type const * row = image.getRow(y);
+                          for (unsigned x = 0; x < width; ++x)
+                          {
+                              unsigned val = row[x];
+                              tree.insert(rgba(U2RED(val), U2GREEN(val), U2BLUE(val), U2ALPHA(val)));
+                          }
+                      }
+                      //transparency values per palette index
+                      std::vector<rgba> pal;
+                      tree.create_palette(pal);
+                      tree.set_sorted(sorted_pal);
+                      assert(int(pal.size()) <= baton->quality);
+                      for(unsigned i=0; i<pal.size(); i++)
+                      {
+                          palette.push_back(rgb(pal[i].r, pal[i].g, pal[i].b));
+                          alphaTable.push_back(pal[i].a);
+                      }
+                      baton->palette = pal_obj;
+                      baton->image_buf = std::auto_ptr<image_data_32>(new image_data_32(image));
                 } else {
                     save_as_png8_oct(baton->stream, image, baton->quality, baton->compression, strategy, trans_mode, use_miniz);
                 }
@@ -697,13 +735,23 @@ WORKER_BEGIN(Work_AfterBlend) {
             warnings->Set(i, String::New((*pos).c_str()));
         }
 
-        std::string result = baton->stream.str();
-        Local<Value> argv[] = {
-            Local<Value>::New(Null()),
-            Local<Value>::New(Buffer::New((char *)result.data(), result.length())->handle_),
-            Local<Value>::New(warnings)
-        };
-        TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
+        if (baton->mode == BLEND_MODE_RAW) {
+            std::string result = baton->stream.str();
+            Local<Value> argv[] = {
+                Local<Value>::New(Null()),
+                Local<Value>::New(Buffer::New((char *)baton->image_buf->getData(), baton->image_buf->width()*baton->image_buf->height()*4)->handle_),
+                Local<Value>::New(Palette::New(baton->palette)->handle_)
+            };
+            TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
+        } else {
+            std::string result = baton->stream.str();
+            Local<Value> argv[] = {
+                Local<Value>::New(Null()),
+                Local<Value>::New(Buffer::New((char *)result.data(), result.length())->handle_),
+                Local<Value>::New(warnings)
+            };
+            TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
+        }
     } else {
         Local<Value> argv[] = {
             Local<Value>::New(Exception::Error(String::New(baton->message.c_str())))

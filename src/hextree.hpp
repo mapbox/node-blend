@@ -364,6 +364,11 @@ public:
         }
     }
 
+    void set_sorted(std::vector<rgba> & sorted)
+    {
+        sorted = sorted_pal_;
+    }
+
 private:
 
     void print_tree(node *r, int d=0, int id=0) const

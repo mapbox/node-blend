@@ -113,9 +113,20 @@ public:
     explicit rgba_palette(std::string const& pal, palette_type type = PALETTE_RGBA);
     rgba_palette();
 
-    const std::vector<rgb>& palette() const;
-    const std::vector<unsigned>& alphaTable() const;
-
+    const std::vector<rgb>& palette();
+    const std::vector<unsigned>& alphaTable();
+    std::vector<rgb>& palette2()
+    {
+        return rgb_pal_;
+    }
+    std::vector<unsigned>& alphaTable2()
+    {
+        return alpha_pal_;
+    }
+    std::vector<rgba>& sorted2()
+    {
+        return sorted_pal_;
+    }
     unsigned char quantize(rgba const& c) const;
     unsigned char quantize(unsigned const& c) const
     {
@@ -137,12 +148,12 @@ private:
     const rgba_palette& operator=(const rgba_palette&);
 
 private:
-    std::vector<rgba> sorted_pal_;
+    mutable std::vector<rgba> sorted_pal_;
     mutable rgba_hash_table color_hashmap_;
 
     unsigned colors_;
-    std::vector<rgb> rgb_pal_;
-    std::vector<unsigned> alpha_pal_;
+    mutable std::vector<rgb> rgb_pal_;
+    mutable std::vector<unsigned> alpha_pal_;
 };
 
 
@@ -153,11 +164,24 @@ public:
     static v8::Persistent<v8::FunctionTemplate> constructor;
 
     explicit Palette(std::string const& palette, rgba_palette::palette_type type);
+    explicit Palette();
+    static Palette* New(palette_ptr const& pal) {
+      v8::HandleScope scope;
+      v8::Local<v8::Object> obj = constructor->GetFunction()->NewInstance();
+      Palette *palette = ObjectWrap::Unwrap<Palette>(obj);
+      palette->palette_ = pal;
+      return palette;
+    }
+
+
     static void Initialize(v8::Handle<v8::Object> target);
     static v8::Handle<v8::Value> New(const v8::Arguments &args);
 
     static v8::Handle<v8::Value> ToString(const v8::Arguments& args);
     static v8::Handle<v8::Value> ToBuffer(const v8::Arguments& args);
+    static v8::Handle<v8::Value> encode(const v8::Arguments& args);
+    static void EIO_Encode(uv_work_t* req);
+    static void EIO_AfterEncode(uv_work_t* req);
 
     inline palette_ptr palette() { return palette_; }
 

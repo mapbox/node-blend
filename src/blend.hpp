@@ -21,6 +21,7 @@
 #include <tr1/unordered_map>
 
 #include "reader.hpp"
+#include "image_data.hpp"
 #include "palette.hpp"
 
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
@@ -115,7 +116,8 @@ enum BlendFormat {
 
 enum AlphaMode {
     BLEND_MODE_OCTREE,
-    BLEND_MODE_HEXTREE
+    BLEND_MODE_HEXTREE,
+    BLEND_MODE_RAW
 };
 
 enum EncoderType {
@@ -160,6 +162,7 @@ struct BlendBaton {
     Tinter tint;
 
     std::ostringstream stream;
+    std::auto_ptr<image_data_32> image_buf;
 
     BlendBaton() :
         quality(0),
