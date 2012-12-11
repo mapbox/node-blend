@@ -33,7 +33,15 @@
 #include <map>
 #include <iostream>
 #include <tr1/memory>
-#include <tr1/unordered_map>
+
+#ifdef USE_DENSE_HASH_MAP
+    #include <sparsehash/dense_hash_map>
+    typedef google::dense_hash_map<int, unsigned char> rgba_hash_table;
+#else
+    #warning compiling without dense_hash_map
+    #include <tr1/unordered_map>
+    typedef std::tr1::unordered_map<int, unsigned char> rgba_hash_table;
+#endif
 
 
 #define U2RED(x) ((x)&0xff)
@@ -53,6 +61,12 @@ struct rgb {
 
     inline rgb(byte r_, byte g_, byte b_) : r(r_), g(g_), b(b_) {};
     rgb(rgba const& c);
+
+    inline rgb(unsigned const& c) {
+        r = U2RED(c);
+        g = U2GREEN(c);
+        b = U2BLUE(c);
+    }
 
     inline bool operator==(const rgb& y) const
     {
@@ -95,15 +109,7 @@ struct rgba
     {
         bool operator() (const rgba& x, const rgba& y) const;
     };
-
-    struct hash_func : public std::unary_function<rgba, std::size_t>
-    {
-        std::size_t operator()(rgba const& p) const;
-    };
 };
-
-
-typedef std::tr1::unordered_map<unsigned, unsigned char> rgba_hash_table;
 
 
 class rgba_palette {
@@ -116,18 +122,7 @@ public:
     const std::vector<rgb>& palette() const;
     const std::vector<unsigned>& alphaTable() const;
 
-    unsigned char quantize(rgba const& c) const;
-    unsigned char quantize(unsigned const& c) const
-    {
-        rgba_hash_table::const_iterator it = color_hashmap_.find(c);
-        if (it != color_hashmap_.end())
-        {
-            return it->second;
-        }
-        else {
-            return quantize(rgba(U2RED(c), U2GREEN(c), U2BLUE(c), U2ALPHA(c)));
-        }
-    }
+    unsigned char quantize(unsigned c) const;
 
     bool valid() const;
 

@@ -130,7 +130,6 @@ class hextree
     // index remaping of sorted_pal_ indexes to indexes of returned image palette
     std::vector<unsigned> pal_remap_;
     // rgba hashtable for quantization
-    typedef std::tr1::unordered_map<rgba, int, rgba::hash_func> rgba_hash_table;
     mutable rgba_hash_table color_hashmap_;
     // gamma correction to prioritize dark colors (>1.0)
     double gamma_;
@@ -151,9 +150,15 @@ public:
           colors_(0),
           has_holes_(false),
           root_(new node()),
+#ifdef USE_DENSE_HASH_MAP
+          color_hashmap_(16384),
+#endif
           trans_mode_(FULL_TRANSPARENCY)
     {
         setGamma(g);
+#ifdef USE_DENSE_HASH_MAP
+        color_hashmap_.set_empty_key(-1);
+#endif
     }
 
     ~hextree()
@@ -236,10 +241,10 @@ public:
     }
 
     // return color index in returned earlier palette
-    int quantize(rgba const& c) const
+    unsigned char quantize(unsigned val) const
     {
-        byte a = preprocessAlpha(c.a);
-        unsigned ind=0;
+        byte a = preprocessAlpha(U2ALPHA(val));
+        unsigned char ind=0;
         if (a < InsertPolicy::MIN_ALPHA || colors_ == 0)
         {
             return 0;
@@ -249,11 +254,12 @@ public:
             return pal_remap_[has_holes_?1:0];
         }
 
-        rgba_hash_table::iterator it = color_hashmap_.find(c);
+        rgba_hash_table::iterator it = color_hashmap_.find(val);
         if (it == color_hashmap_.end())
         {
+            rgba c(val);
             int dr, dg, db, da;
-            int dist, newdist;
+            int dist, newdist, dist_add;
 
             // find closest match based on mean of r,g,b,a
 #if BOOST_VERSION >= 104600
@@ -280,8 +286,9 @@ public:
                 dg = sorted_pal_[i].g - c.g;
                 db = sorted_pal_[i].b - c.b;
                 da = sorted_pal_[i].a - a;
+                dist_add = dr+db+dg+da;
                 // stop criteria based on properties of used sorting
-                if (((dr+db+dg+da) * (dr+db+dg+da) / 4 > dist))
+                if ((dist_add * dist_add / 4 > dist))
                 {
                     break;
                 }
@@ -298,8 +305,9 @@ public:
                 dg = sorted_pal_[i].g - c.g;
                 db = sorted_pal_[i].b - c.b;
                 da = sorted_pal_[i].a - a;
+                dist_add = dr+db+dg+da;
                 // stop criteria based on properties of used sorting
-                if ((dr+db+dg+da) * (dr+db+dg+da) / 4 > dist)
+                if (dist_add * dist_add / 4 > dist)
                 {
                     break;
                 }
@@ -311,7 +319,7 @@ public:
                 }
             }
             //put found index in hash map
-            color_hashmap_[c] = ind;
+            color_hashmap_[val] = ind;
         }
         else
         {

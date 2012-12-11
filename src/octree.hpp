@@ -170,9 +170,10 @@ public:
         }
     }
 
-    int quantize(rgb const& c) const
+    unsigned char quantize(unsigned val) const
     {
-        unsigned level = 0;
+        unsigned char level = 0;
+        rgb c(val);
         node * cur_node = root_;
         while (cur_node)
         {

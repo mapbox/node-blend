@@ -74,6 +74,13 @@ def set_options(opt):
         dest='png_dir'
     )
 
+    opt.add_option('--without-densehashmap',
+        action='store_true',
+        default=None,
+        help='Do not build with densehashmap support - you can also do `export NODE_BLEND_NO_DENSE=1` to disable',
+        dest='wo_densehash'
+    )
+
 def _conf_exit(conf, msg):
     conf.fatal('\n\n' + msg + '\n...check the build/config.log for details')
 
@@ -127,6 +134,13 @@ def configure(conf):
 
     o = Options.options
 
+    if os.environ.has_key('NODE_BLEND_NO_DENSE'):
+        key = os.environ.get('NODE_BLEND_NO_DENSE')
+        try:
+            if bool(int(key)):
+                o.wo_densehash = True
+        except: pass
+
     # jpeg checks
     found_jpeg = False
     if o.jpeg_dir:
@@ -158,10 +172,14 @@ def configure(conf):
     if not found_png:
         _conf_exit(conf, 'png not found: searched %s \nuse --with-png to point to the location of your png libs and headers' % png_search_paths)
 
+    if not o.wo_densehash:
+        conf.env.append_value("CXXFLAGS",["-I../deps","-DUSE_DENSE_HASH_MAP"])
+        conf.env.WO_DENSEHASH = o.wo_densehash
+
 
 def build(bld):
     obj = bld.new_task_gen("cxx", "shlib", "node_addon")
-    obj.cxxflags = ["-O3", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-Wno-unused-value", "-Wno-unused-function", "-mfpmath=sse", "-march=core2",
+    obj.cxxflags = ["-O3", "-DNDEBUG", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-Wno-unused-value", "-Wno-unused-function", "-mfpmath=sse", "-march=core2",
         "-funroll-loops", "-fomit-frame-pointer"]
     obj.target = TARGET
     obj.source = ["src/reader.cpp", "src/blend.cpp", "src/palette.cpp"]
