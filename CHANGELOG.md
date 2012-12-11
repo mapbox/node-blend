@@ -3,6 +3,7 @@
 ## 0.6.0
 
  - Added HSL tinting support - a tint string can be passed as a property of an image and all rgb pixels will be set as a function of hsl2rgb conversion. See README for details on usage. (#26)
+ - Added `--debug` configure option to enable debug builds with assertions
 
 ## 0.5.1
 
