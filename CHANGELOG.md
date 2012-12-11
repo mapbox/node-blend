@@ -1,5 +1,9 @@
 # Changlog
 
+## 0.6.0
+
+ - Added HSL tinting support - a tint string can be passed as a property of an image and all rgb pixels will be set as a function of hsl2rgb conversion. See README for details on usage. (#26)
+
 ## 0.5.1
 
  - Fixed possible assert/crash when encoding an image with true white when using dense_hash_map
