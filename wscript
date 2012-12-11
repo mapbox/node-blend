@@ -81,6 +81,13 @@ def set_options(opt):
         dest='wo_densehash'
     )
 
+    opt.add_option('--debug',
+        action='store_true',
+        default=None,
+        help='Build in debug mode',
+        dest='debug'
+    )
+
 def _conf_exit(conf, msg):
     conf.fatal('\n\n' + msg + '\n...check the build/config.log for details')
 
@@ -175,12 +182,22 @@ def configure(conf):
     if not o.wo_densehash:
         conf.env.append_value("CXXFLAGS",["-I../deps","-DUSE_DENSE_HASH_MAP"])
         conf.env.WO_DENSEHASH = o.wo_densehash
+    conf.env.DEBUG = o.debug
 
 
 def build(bld):
     obj = bld.new_task_gen("cxx", "shlib", "node_addon")
-    obj.cxxflags = ["-O3", "-DNDEBUG", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-Wno-unused-value", "-Wno-unused-function", "-mfpmath=sse", "-march=core2",
-        "-funroll-loops", "-fomit-frame-pointer"]
+    if bld.env.DEBUG:
+        obj.cxxflags = ["-O0","-g", "-DDEBUG", "-D_FILE_OFFSET_BITS=64",
+                        "-D_LARGEFILE_SOURCE", "-Wall", "-Wno-unused-value",
+                        "-Wno-unused-function", "-mfpmath=sse", "-march=core2",
+                        "-funroll-loops"]
+    else:
+        obj.cxxflags = ["-O3","-DNDEBUG", "-D_FILE_OFFSET_BITS=64",
+                        "-D_LARGEFILE_SOURCE", "-Wall", "-Wno-unused-value",
+                        "-Wno-unused-function", "-mfpmath=sse", "-march=core2",
+                        "-funroll-loops",
+                        "-fomit-frame-pointer"]
     obj.target = TARGET
     obj.source = ["src/reader.cpp", "src/blend.cpp", "src/palette.cpp"]
     obj.uselib = ["PNG", "JPEG"]
