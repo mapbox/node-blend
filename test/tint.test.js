@@ -40,12 +40,16 @@ var TINTS = [
   "0x1;0x1;0x1;0x1", // no change
   ".5x1;1x1;0x1;0x1", // teal
   "0x1;0x1;0x1;0x.5", // half alpha
-  ".1x1;.3x1;0x.9;0x1" // sepia
+  ".1x1;.3x1;0x.9;0x1", // sepia
+  "0;54;1;0;1"
 ]
 
 describe('tinting combinations on varied images', function() {
     fs.readdirSync('./test/fixture/tinting')
-        .filter(function(file) { return path.extname(file) === '.png' && file.indexOf('.result.') == -1; })
+        .filter(function(file) {
+            return (path.extname(file) === '.png' || path.extname(file) === '.jpeg')
+                   && file.indexOf('.result.') == -1; }
+        )
         .forEach(function(file) {
             TINTS.forEach(function(tinter) {
                 var options = {
@@ -56,9 +60,17 @@ describe('tinting combinations on varied images', function() {
                 };
                 it(file + '-' + tinter.toString(), function(done) {
                     var buf = fs.readFileSync('./test/fixture/tinting/' + file);
-                    tint([{buffer:buf,tint:tint.parseTintString(tinter)}], options, function(err,data) {
+                    var tint_obj;
+                    if (tinter.indexOf('x') > -1) {
+                       tint_obj = tint.parseTintString(tinter);
+                    } else {
+                       tint_obj = tint.parseTintString(tint.upgradeTintString(tinter));
+                    }
+                    tint([{buffer:buf,tint:tint_obj}], options, function(err,data) {
                         var filepath = './test/tint-varied/' + path.basename(file, '.png') + '-' + tinter + ".png";
-                        //fs.writeFileSync(filepath,data);
+                        if (!fs.existsSync(filepath)) {
+                            fs.writeFileSync(filepath,data);
+                        }
                         utilities.imageEqualsFile(data, filepath, done);
                     });
                 });
