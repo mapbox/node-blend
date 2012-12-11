@@ -1,7 +1,7 @@
 {
     "name": "blend",
     "description": "High speed image blending and quantization",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "homepage": "http://github.com/developmentseed/node-blend",
     "author": "Konstantin Käfer <kkaefer@gmail.com>",
     "repository": {
