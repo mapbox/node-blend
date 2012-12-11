@@ -3,9 +3,14 @@
 #include "image_data.hpp"
 #include "png_io.hpp"
 #include "jpeg_io.hpp"
+#include "tint.hpp"
+
+#include <sstream>
 
 using namespace v8;
 using namespace node;
+
+static hsl_cache hsl_colors;
 
 unsigned int hexToUInt32Color(char *hex) {
     if (!hex) return 0;
@@ -26,6 +31,118 @@ unsigned int hexToUInt32Color(char *hex) {
     }
 }
 
+void get_color_cache(Tinter & tint, hsl_cache & lut) {
+    std::ostringstream key;
+    key << std::fixed
+        << "-" << tint.h0
+        << "-" << tint.s0
+        << "-" << tint.l0
+        << "-" << tint.l1;
+    typedef hsl_cache::const_iterator iterator_type;
+    iterator_type itr = lut.find(key.str());
+    if (itr != lut.end()) {
+        tint.cache = itr->second;
+    } else {
+        color_cache & cache = tint.cache;
+        unsigned r;
+        unsigned g;
+        unsigned b;
+        for (unsigned i = 0; i < 256;++i) {
+            double l = tint.l0 + (i / 255.0 * (tint.l1 - tint.l0));
+            if (l > 1) l = 1;
+            if (l < 0) l = 0;
+            hsl2rgb(tint.h0,tint.s0,l,r,g,b);
+            cache.insert(std::make_pair(i,(b << 16) | (g << 8) | r));
+        }
+        lut.insert(std::make_pair(key.str(),cache));
+    }
+}
+
+Handle<Value> rgb2hsl2(const Arguments& args) {
+    HandleScope scope;
+    if (args.Length() != 3) {
+        return TYPE_EXCEPTION("Please pass r,g,b integer values as three arguments");
+    }
+    if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsNumber()) {
+        return TYPE_EXCEPTION("Please pass r,g,b integer values as three arguments");
+    }
+    unsigned r,g,b;
+    r = args[0]->IntegerValue();
+    g = args[1]->IntegerValue();
+    b = args[2]->IntegerValue();
+    Local<Array> hsl = Array::New(3);
+    double h,s,l;
+    rgb2hsl(r,g,b,h,s,l);
+    hsl->Set(0,Number::New(h));
+    hsl->Set(1,Number::New(s));
+    hsl->Set(2,Number::New(l));
+    return scope.Close(hsl);
+}
+
+Handle<Value> hsl2rgb2(const Arguments& args) {
+    HandleScope scope;
+    if (args.Length() != 3) {
+        return TYPE_EXCEPTION("Please pass hsl fractional values as three arguments");
+    }
+    if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsNumber()) {
+        return TYPE_EXCEPTION("Please pass hsl fractional values as three arguments");
+    }
+    double h,s,l;
+    h = args[0]->NumberValue();
+    s = args[1]->NumberValue();
+    l = args[2]->NumberValue();
+    Local<Array> rgb = Array::New(3);
+    unsigned r,g,b;
+    hsl2rgb(h,s,l,r,g,b);
+    rgb->Set(0,Integer::New(r));
+    rgb->Set(1,Integer::New(g));
+    rgb->Set(2,Integer::New(b));
+    return scope.Close(rgb);
+}
+
+void parseTintOps(Local<Object> const& tint, Tinter & tinter, std::string & msg) {
+    HandleScope scope;
+    Local<Value> hue = tint->Get(String::NewSymbol("h"));
+    if (!hue.IsEmpty() && hue->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(hue);
+        if (val_array->Length() != 2) {
+            msg = "h array must be a pair of values";
+        }
+        tinter.h0 = val_array->Get(0)->NumberValue();
+        tinter.h1 = val_array->Get(1)->NumberValue();
+    }
+    Local<Value> sat = tint->Get(String::NewSymbol("s"));
+    if (!sat.IsEmpty() && sat->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(sat);
+        if (val_array->Length() != 2) {
+            msg = "s array must be a pair of values";
+        }
+        tinter.s0 = val_array->Get(0)->NumberValue();
+        tinter.s1 = val_array->Get(1)->NumberValue();
+    }
+    Local<Value> light = tint->Get(String::NewSymbol("l"));
+    if (!light.IsEmpty() && light->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(light);
+        if (val_array->Length() != 2) {
+            msg = "l array must be a pair of values";
+        }
+        tinter.l0 = val_array->Get(0)->NumberValue();
+        tinter.l1 = val_array->Get(1)->NumberValue();
+    }
+    Local<Value> alpha = tint->Get(String::NewSymbol("a"));
+    if (!alpha.IsEmpty() && alpha->IsArray()) {
+        Local<Array> val_array = Local<Array>::Cast(alpha);
+        if (val_array->Length() != 2) {
+            msg = "a array must be a pair of values";
+        }
+        tinter.a0 = val_array->Get(0)->NumberValue();
+        tinter.a1 = val_array->Get(1)->NumberValue();
+    }
+    Local<Value> debug = tint->Get(String::NewSymbol("debug"));
+    if (!debug.IsEmpty()) {
+        tinter.debug = debug->BooleanValue();
+    }
+}
 
 Handle<Value> Blend(const Arguments& args) {
     HandleScope scope;
@@ -180,6 +297,22 @@ Handle<Value> Blend(const Arguments& args) {
             }
             image->x = props->Get(String::NewSymbol("x"))->Int32Value();
             image->y = props->Get(String::NewSymbol("y"))->Int32Value();
+
+            Local<Value> tint_val = props->Get(String::NewSymbol("tint"));
+            if (!tint_val.IsEmpty() && tint_val->IsObject()) {
+                Local<Object> tint = tint_val->ToObject();
+                if (!tint.IsEmpty()) {
+                    baton->reencode = true;
+                    std::string msg;
+                    parseTintOps(tint,image->tint,msg);
+                    if (!image->tint.is_identity()) {
+                        get_color_cache(image->tint,hsl_colors);
+                    }
+                    if (!msg.empty()) {
+                        return TYPE_EXCEPTION(msg.c_str());
+                    }
+                }
+            }
         }
 
         if (image->buffer.IsEmpty()) {
@@ -226,6 +359,27 @@ inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
     }
 }
 
+inline void TintPixel(unsigned & r,
+                      unsigned & g,
+                      unsigned & b,
+                      Tinter const& tint) {
+    unsigned lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
+    typedef color_cache::const_iterator iterator_type;
+    color_cache const& cache = tint.cache;
+    iterator_type itr = cache.find(lightness);
+    if (itr != cache.end())
+    {
+        r = itr->second & 0xff;
+        g = (itr->second >> 8 ) & 0xff;
+        b = (itr->second >> 16 ) & 0xff;
+    } else {
+        double l = tint.l0 + (lightness / 255.0 * (tint.l1 - tint.l0));
+        if (l > 1) l = 1;
+        if (l < 0) l = 0;
+        hsl2rgb(tint.h0,tint.s0,l,r,g,b);
+    }
+}
+
 
 void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     unsigned int *source = image->reader->surface;
@@ -240,14 +394,39 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     int targetX = std::max(0, image->x);
     int targetY = std::max(0, image->y);
     int targetPos = targetY * baton->width + targetX;
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            Blend_CompositePixel(target[targetPos + x], source[sourcePos + x]);
+    bool tinting = !image->tint.is_identity();
+    bool set_alpha = !image->tint.is_alpha_identity();
+    if (tinting || set_alpha) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                unsigned int& source_pixel = source[sourcePos + x];
+                unsigned a = (source_pixel >> 24) & 0xff;
+                if (set_alpha) {
+                    if (image->tint.a1 < 1) {
+                        a = static_cast<unsigned>(std::floor(a * image->tint.a1));
+                    }
+                    a = a > 255 ? 255 : a;
+                }
+                unsigned r = source_pixel & 0xff;
+                unsigned g = (source_pixel >> 8 ) & 0xff;
+                unsigned b = (source_pixel >> 16) & 0xff;
+                if (a >= 0.01 && tinting) {
+                    TintPixel(r,g,b,image->tint);
+                }
+                source_pixel = (a << 24) | (b << 16) | (g << 8) | (r);
+                Blend_CompositePixel(target[targetPos + x], source_pixel);
+            }
+            sourcePos += image->width;
+            targetPos += baton->width;
         }
-
-        sourcePos += image->width;
-        targetPos += baton->width;
+    } else {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Blend_CompositePixel(target[targetPos + x], source[sourcePos + x]);
+            }
+            sourcePos += image->width;
+            targetPos += baton->width;
+        }
     }
 }
 
@@ -344,7 +523,7 @@ WORKER_BEGIN(Work_Blend) {
 
         bool coversWidth = image->x <= 0 && visibleWidth >= baton->width;
         bool coversHeight = image->y <= 0 && visibleHeight >= baton->height;
-        if (!layer->alpha && coversWidth && coversHeight) {
+        if (!layer->alpha && coversWidth && coversHeight && image->tint.is_alpha_identity()) {
             // Skip decoding more layers.
             alpha = false;
         }
@@ -354,6 +533,7 @@ WORKER_BEGIN(Work_Blend) {
         image->height = layer->height;
         image->reader = layer;
         size++;
+
     }
 
     // Now blend images.
@@ -428,6 +608,8 @@ WORKER_BEGIN(Work_AfterBlend) {
 
 extern "C" void init(Handle<Object> target) {
     NODE_SET_METHOD(target, "blend", Blend);
+    NODE_SET_METHOD(target, "rgb2hsl2", rgb2hsl2);
+    NODE_SET_METHOD(target, "hsl2rgb2", hsl2rgb2);
     Palette::Initialize(target);
 
     target->Set(

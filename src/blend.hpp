@@ -19,8 +19,10 @@
 #include <vector>
 #include <tr1/memory>
 
+
 #include "reader.hpp"
 #include "palette.hpp"
+#include "tint.hpp"
 
 #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 4
     #define WORKER_BEGIN(name)                  int name(eio_req *req)
@@ -42,12 +44,14 @@ struct Image {
         x(0),
         y(0),
         width(0),
-        height(0) {}
+        height(0),
+        tint() {}
     PersistentObject buffer;
     unsigned char *data;
     size_t dataLength;
     int x, y;
     int width, height;
+    Tinter tint;
     std::auto_ptr<ImageReader> reader;
 };
 
@@ -83,7 +87,6 @@ v8::Handle<v8::Value> Blend(const v8::Arguments& args);
 WORKER_BEGIN(Work_Blend);
 WORKER_BEGIN(Work_AfterBlend);
 
-
 struct BlendBaton {
 #if NODE_MINOR_VERSION >= 5 || NODE_MAJOR_VERSION > 0
     uv_work_t request;
@@ -104,7 +107,6 @@ struct BlendBaton {
     int compression;
     AlphaMode mode;
     EncoderType encoder;
-
     std::ostringstream stream;
 
     BlendBaton() :
