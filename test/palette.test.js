@@ -50,8 +50,8 @@ describe('palette creation', function() {
 });
 
 describe('using palettes', function() {
-    var palette = blend.Palette.fromJSON([ '333333', '7F7F7F', 'AAAAAA', 'FFFFFF' ]);
     it('should reencode with a very constrained palette', function(done) {
+        var palette = blend.Palette.fromJSON([ '333333', '7F7F7F', 'AAAAAA', 'FFFFFF' ]);
         blend([ images[0] ], { reencode: true, palette: palette }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
@@ -64,6 +64,24 @@ describe('using palettes', function() {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/28.png', done);
+        });
+    });
+
+    it('should handle alpha in palette', function(done) {
+        var palette = blend.Palette.fromJSON([ '00000000' ]);
+        blend([ images[0], images[1] ], { palette: palette }, function(err, data, warnings) {
+            if (err) return done(err);
+            assert.deepEqual(warnings, []);
+            utilities.imageEqualsFile(data, 'test/fixture/results/29.png', done);
+        });
+    });
+
+    it('should handle alpha in palette 2', function(done) {
+        var palette = blend.Palette.fromJSON([ '00000000','008000' ]);
+        blend([ fs.readFileSync('test/fixture/one_pixel.png') ], { palette: palette }, function(err, data, warnings) {
+            if (err) return done(err);
+            assert.deepEqual(warnings, undefined);
+            utilities.imageEqualsFile(data, 'test/fixture/results/30.png', done);
         });
     });
 });

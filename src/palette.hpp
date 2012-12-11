@@ -36,11 +36,11 @@
 
 #ifdef USE_DENSE_HASH_MAP
     #include <sparsehash/dense_hash_map>
-    typedef google::dense_hash_map<int, unsigned char> rgba_hash_table;
+    typedef google::dense_hash_map<unsigned int, unsigned char> rgba_hash_table;
 #else
     #warning compiling without dense_hash_map
     #include <tr1/unordered_map>
-    typedef std::tr1::unordered_map<int, unsigned char> rgba_hash_table;
+    typedef std::tr1::unordered_map<unsigned int, unsigned char> rgba_hash_table;
 #endif
 
 

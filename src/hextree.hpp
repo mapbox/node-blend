@@ -157,7 +157,7 @@ public:
     {
         setGamma(g);
 #ifdef USE_DENSE_HASH_MAP
-        color_hashmap_.set_empty_key(-1);
+        color_hashmap_.set_empty_key(0);
 #endif
     }
 
@@ -348,7 +348,7 @@ public:
 #else
         std::sort(sorted_pal_.begin(), sorted_pal_.end(), rgba::mean_sort_cmp());
 #endif
-        // returned palette is rearanged, so that colors with a<255 are at the begining
+        // returned palette is rearranged, so that colors with a<255 are at the begining
         pal_remap_.resize(sorted_pal_.size());
         palette.clear();
         palette.reserve(sorted_pal_.size());

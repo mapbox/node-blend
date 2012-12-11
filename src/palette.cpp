@@ -55,7 +55,7 @@ rgba_palette::rgba_palette(std::string const& pal, palette_type type)
     : colors_(0)
 {
 #ifdef USE_DENSE_HASH_MAP
-    color_hashmap_.set_empty_key(-1);
+    color_hashmap_.set_empty_key(0);
 #endif
     parse(pal, type);
 }
@@ -64,7 +64,7 @@ rgba_palette::rgba_palette()
     : colors_(0)
 {
 #ifdef USE_DENSE_HASH_MAP
-    color_hashmap_.set_empty_key(-1);
+    color_hashmap_.set_empty_key(0);
 #endif
 }
 
@@ -87,7 +87,7 @@ bool rgba_palette::valid() const
 unsigned char rgba_palette::quantize(unsigned val) const
 {
     unsigned char index = 0;
-    if (colors_ == 1) return index;
+    if (colors_ == 1 || val == 0) return index;
 
     rgba_hash_table::iterator it = color_hashmap_.find(val);
     if (it != color_hashmap_.end())
@@ -216,7 +216,10 @@ void rgba_palette::parse(std::string const& pal, palette_type type)
     for (unsigned i = 0; i < colors_; i++)
     {
         rgba c = sorted_pal_[i];
-        color_hashmap_[c] = i;
+        if ((unsigned)c != 0)
+        {
+            color_hashmap_[c] = i;
+        }
         rgb_pal_.push_back(rgb(c));
         if (c.a < 0xFF)
         {
