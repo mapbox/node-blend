@@ -10,8 +10,6 @@
 using namespace v8;
 using namespace node;
 
-static hsl_cache hsl_colors;
-
 unsigned int hexToUInt32Color(char *hex) {
     if (!hex) return 0;
     if (hex[0] == '#') hex++;
@@ -28,33 +26,6 @@ unsigned int hexToUInt32Color(char *hex) {
         return (color << 24) | ((color & 0xFF00) << 8) | ((color & 0xFF0000) >> 8) | ((color & 0xFF000000) >> 24);
     } else {
         return 0xFF000000 | ((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16);
-    }
-}
-
-void get_color_cache(Tinter & tint, hsl_cache & lut) {
-    std::ostringstream key;
-    key << std::fixed
-        << "-" << tint.h0
-        << "-" << tint.s0
-        << "-" << tint.l0
-        << "-" << tint.l1;
-    typedef hsl_cache::const_iterator iterator_type;
-    iterator_type itr = lut.find(key.str());
-    if (itr != lut.end()) {
-        tint.cache = itr->second;
-    } else {
-        color_cache & cache = tint.cache;
-        unsigned r;
-        unsigned g;
-        unsigned b;
-        for (unsigned i = 0; i < 256;++i) {
-            double l = tint.l0 + (i / 255.0 * (tint.l1 - tint.l0));
-            if (l > 1) l = 1;
-            if (l < 0) l = 0;
-            hsl2rgb(tint.h0,tint.s0,l,r,g,b);
-            cache.insert(std::make_pair(i,(b << 16) | (g << 8) | r));
-        }
-        lut.insert(std::make_pair(key.str(),cache));
     }
 }
 
@@ -305,9 +276,6 @@ Handle<Value> Blend(const Arguments& args) {
                     baton->reencode = true;
                     std::string msg;
                     parseTintOps(tint,image->tint,msg);
-                    if (!image->tint.is_identity()) {
-                        get_color_cache(image->tint,hsl_colors);
-                    }
                     if (!msg.empty()) {
                         return TYPE_EXCEPTION(msg.c_str());
                     }
@@ -363,21 +331,22 @@ inline void TintPixel(unsigned & r,
                       unsigned & g,
                       unsigned & b,
                       Tinter const& tint) {
-    unsigned lightness = std::floor(0.30*r + 0.59*g + 0.11*b +.5);
-    typedef color_cache::const_iterator iterator_type;
-    color_cache const& cache = tint.cache;
-    iterator_type itr = cache.find(lightness);
-    if (itr != cache.end())
-    {
-        r = itr->second & 0xff;
-        g = (itr->second >> 8 ) & 0xff;
-        b = (itr->second >> 16 ) & 0xff;
-    } else {
-        double l = tint.l0 + (lightness / 255.0 * (tint.l1 - tint.l0));
-        if (l > 1) l = 1;
-        if (l < 0) l = 0;
-        hsl2rgb(tint.h0,tint.s0,l,r,g,b);
-    }
+    double h;
+    double s;
+    double l;
+    rgb2hsl(r,g,b,h,s,l);
+    double h2 = tint.h0 + (h * (tint.h1 - tint.h0));
+    double s2 = tint.s0 + (s * (tint.s1 - tint.s0));
+    double l2 = tint.l0 + (l * (tint.l1 - tint.l0));
+    /*
+    if (h2 > 1) h2 = 1;
+    if (h2 < 0) h2 = 0;
+    if (s2 > 1) s2 = 1;
+    if (s2 < 0) s2 = 0;
+    if (l2 > 1) l2 = 1;
+    if (l2 < 0) l2 = 0;
+    */
+    hsl2rgb(h2,s2,l2,r,g,b);
 }
 
 
@@ -402,15 +371,15 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
                 unsigned int& source_pixel = source[sourcePos + x];
                 unsigned a = (source_pixel >> 24) & 0xff;
                 if (set_alpha) {
-                    if (image->tint.a1 < 1) {
-                        a = static_cast<unsigned>(std::floor(a * image->tint.a1));
-                    }
-                    a = a > 255 ? 255 : a;
+                    double a2 = image->tint.a0 + (a/255.0 * (image->tint.a1 - image->tint.a0));
+                    if (a2 > 1) a2 = 1;
+                    if (a2 < 0) a2 = 0;
+                    a = static_cast<unsigned>(std::floor(a2 * 255.0));
                 }
                 unsigned r = source_pixel & 0xff;
                 unsigned g = (source_pixel >> 8 ) & 0xff;
                 unsigned b = (source_pixel >> 16) & 0xff;
-                if (a >= 0.01 && tinting) {
+                if (a > 1 && tinting) {
                     TintPixel(r,g,b,image->tint);
                 }
                 source_pixel = (a << 24) | (b << 16) | (g << 8) | (r);
