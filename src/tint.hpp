@@ -7,11 +7,11 @@
 
 #ifdef USE_DENSE_HASH_MAP
     #include <sparsehash/dense_hash_map>
-    typedef google::dense_hash_map<unsigned int, unsigned char> color_cache;
+    typedef google::dense_hash_map<unsigned int, unsigned> color_cache;
     typedef std::tr1::unordered_map<std::string,color_cache> hsl_cache;
 #else
     #warning compiling without dense_hash_map
-    typedef std::tr1::unordered_map<unsigned int, unsigned char> color_cache;
+    typedef std::tr1::unordered_map<unsigned int, unsigned> color_cache;
     typedef std::tr1::unordered_map<std::string,color_cache> hsl_cache;
 #endif
 
