@@ -4,10 +4,16 @@
 #include <cmath>
 #include <string>
 #include <tr1/unordered_map>
-//#include <sstream>
 
-typedef std::tr1::unordered_map<unsigned,unsigned> color_cache;
-typedef std::tr1::unordered_map<std::string,color_cache> hsl_cache;
+#ifdef USE_DENSE_HASH_MAP
+    #include <sparsehash/dense_hash_map>
+    typedef google::dense_hash_map<unsigned int, unsigned char> color_cache;
+    typedef std::tr1::unordered_map<std::string,color_cache> hsl_cache;
+#else
+    #warning compiling without dense_hash_map
+    typedef std::tr1::unordered_map<unsigned int, unsigned char> color_cache;
+    typedef std::tr1::unordered_map<std::string,color_cache> hsl_cache;
+#endif
 
 void rgb2hsl(unsigned red, unsigned green, unsigned blue,
              double & h, double & s, double & l) {
@@ -84,7 +90,11 @@ struct Tinter {
       a0(0),
       a1(1),
       cache(255),
-      debug(false) {}
+      debug(false) {
+#ifdef USE_DENSE_HASH_MAP
+        cache.set_empty_key(0);
+#endif
+      }
 
     bool is_identity() {
         return (h0 == 0 &&
