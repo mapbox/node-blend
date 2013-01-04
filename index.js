@@ -190,7 +190,7 @@ module.exports.upgradeTintString = function(old,round) {
         if (round) {
             val = val.toFixed(round);
         }
-        new_tint += ';' + val + 'x' + val;
+        new_tint += ';0x' + val;
     }
     return new_tint;
 }
