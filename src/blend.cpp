@@ -10,7 +10,7 @@
 using namespace v8;
 using namespace node;
 
-unsigned int hexToUInt32Color(char *hex) {
+static unsigned int hexToUInt32Color(char *hex) {
     if (!hex) return 0;
     if (hex[0] == '#') hex++;
     int len = strlen(hex);
@@ -29,7 +29,7 @@ unsigned int hexToUInt32Color(char *hex) {
     }
 }
 
-Handle<Value> rgb2hsl2(const Arguments& args) {
+static Handle<Value> rgb2hsl2(const Arguments& args) {
     HandleScope scope;
     if (args.Length() != 3) {
         return TYPE_EXCEPTION("Please pass r,g,b integer values as three arguments");
@@ -50,7 +50,7 @@ Handle<Value> rgb2hsl2(const Arguments& args) {
     return scope.Close(hsl);
 }
 
-Handle<Value> hsl2rgb2(const Arguments& args) {
+static Handle<Value> hsl2rgb2(const Arguments& args) {
     HandleScope scope;
     if (args.Length() != 3) {
         return TYPE_EXCEPTION("Please pass hsl fractional values as three arguments");
@@ -71,7 +71,7 @@ Handle<Value> hsl2rgb2(const Arguments& args) {
     return scope.Close(rgb);
 }
 
-void parseTintOps(Local<Object> const& tint, Tinter & tinter, std::string & msg) {
+static void parseTintOps(Local<Object> const& tint, Tinter & tinter, std::string & msg) {
     HandleScope scope;
     Local<Value> hue = tint->Get(String::NewSymbol("h"));
     if (!hue.IsEmpty() && hue->IsArray()) {
@@ -261,7 +261,7 @@ Handle<Value> Blend(const Arguments& args) {
         } else if (buffer->IsObject()) {
             Local<Object> props = buffer->ToObject();
             if (props->Has(String::NewSymbol("buffer"))) {
-                Local<Value> buffer = props->Get(String::NewSymbol("buffer"));
+                buffer = props->Get(String::NewSymbol("buffer"));
                 if (Buffer::HasInstance(buffer)) {
                     image->buffer = Persistent<Object>::New(buffer->ToObject());
                 }
@@ -298,7 +298,7 @@ Handle<Value> Blend(const Arguments& args) {
 }
 
 
-inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
+static inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
     if (source <= 0x00FFFFFF) {
         // Top pixel is fully transparent.
         // <do nothing>
@@ -327,7 +327,7 @@ inline void Blend_CompositePixel(unsigned int& target, unsigned int& source) {
     }
 }
 
-inline void TintPixel(unsigned & r,
+static inline void TintPixel(unsigned & r,
                       unsigned & g,
                       unsigned & b,
                       Tinter const& tint) {
@@ -348,7 +348,7 @@ inline void TintPixel(unsigned & r,
 }
 
 
-void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
+static void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     unsigned int *source = image->reader->surface;
 
     int sourceX = std::max(0, -image->x);
@@ -397,7 +397,7 @@ void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *image) {
     }
 }
 
-void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alpha) {
+static void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alpha) {
     try {
         if (baton->format == BLEND_FORMAT_JPEG) {
             if (baton->quality == 0) baton->quality = 80;
