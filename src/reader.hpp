@@ -16,7 +16,7 @@ class ImageReader {
 public:
     virtual bool decode() {
         return false;
-    };
+    }
     ImageReader(unsigned char* src, size_t len) : width(0), height(0),
         alpha(false), surface(NULL), source(src), length(len), pos(0) {
         }
@@ -28,7 +28,7 @@ public:
             free(surface);
             surface = NULL;
         }
-    };
+    }
     static ImageReader* create(unsigned char* surface, size_t len);
 
     png_uint_32 width;
