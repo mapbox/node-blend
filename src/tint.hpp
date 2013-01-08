@@ -15,7 +15,7 @@
     typedef std::tr1::unordered_map<std::string,color_cache> hsl_cache;
 #endif
 
-void rgb2hsl(unsigned red, unsigned green, unsigned blue,
+static void rgb2hsl(unsigned red, unsigned green, unsigned blue,
              double & h, double & s, double & l) {
     double r = red/255.0;
     double g = green/255.0;
@@ -25,7 +25,7 @@ void rgb2hsl(unsigned red, unsigned green, unsigned blue,
     double delta = max - min;
     double gamma = max + min;
     h = 0.0, s = 0.0, l = gamma / 2.0;
-    if (delta) {
+    if (delta > 0.0) {
         s = l > 0.5 ? delta / (2.0 - gamma) : delta / gamma;
         if (max == r && max != g) h = (g - b) / delta + (g < b ? 6.0 : 0.0);
         if (max == g && max != b) h = (b - r) / delta + 2.0;
@@ -34,7 +34,7 @@ void rgb2hsl(unsigned red, unsigned green, unsigned blue,
     }
 }
 
-inline void faster_fmod(const double n, const double d, double & q)
+static inline void faster_fmod(const double n, const double d, double & q)
 {
   if (d == 0.0) {
     q = 0;
@@ -47,15 +47,15 @@ inline void faster_fmod(const double n, const double d, double & q)
 }
 
 
-inline double hueToRGB(double m1, double m2, double h) {
+static inline double hueToRGB(double m1, double m2, double h) {
     faster_fmod(h+1,1,h);
     if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
     if (h * 2 < 1) return m2;
     if (h * 3 < 2) return m1 + (m2 - m1) * (0.66666 - h) * 6;
     return m1;
-};
+}
 
-inline void hsl2rgb(double h, double s, double l,
+static inline void hsl2rgb(double h, double s, double l,
              unsigned & r, unsigned & g, unsigned & b) {
     if (!s) {
         r = g = b = static_cast<unsigned>(l * 255);

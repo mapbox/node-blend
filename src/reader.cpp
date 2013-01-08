@@ -28,11 +28,10 @@ void PNGImageReader::readCallback(png_structp png, png_bytep data, png_size_t le
     // Read `length` bytes into `data`.
     if (reader->pos + length > reader->length) {
         png_error(png, "Read Error");
-        return;
+    } else {
+        memcpy(data, reader->source + reader->pos, length);
+        reader->pos += length;
     }
-
-    memcpy(data, reader->source + reader->pos, length);
-    reader->pos += length;
 }
 
 void PNGImageReader::errorHandler(png_structp png, png_const_charp error_msg) {

@@ -146,7 +146,7 @@ module.exports.parseTintString = function(str) {
 
 module.exports.upgradeTintString = function(old,round) {
     if (!old || !old.length) return old;
-    if(old.match(/^#?([0-9a-f]{6})$/i)) return old;
+    if (old.match(/^#?([0-9a-f]{6})$/i) || old.indexOf('x') !== -1) return old;
     var new_tint = '';
     var parts = old.split(';');
     if (parts.length > 0) {
@@ -190,7 +190,7 @@ module.exports.upgradeTintString = function(old,round) {
         if (round) {
             val = val.toFixed(round);
         }
-        new_tint += ';' + val + 'x' + val;
+        new_tint += ';0x' + val;
     }
     return new_tint;
 }
