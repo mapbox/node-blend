@@ -308,15 +308,15 @@ static inline void Blend_CompositePixel(unsigned int& target, unsigned int& sour
     } else {
         // Both pixels have transparency.
         // From http://trac.mapnik.org/browser/trunk/include/mapnik/graphics.hpp#L337
-        unsigned int a1 = (source >> 24) & 0xff;
-        unsigned int r1 = source & 0xff;
-        unsigned int g1 = (source >> 8) & 0xff;
-        unsigned int b1 = (source >> 16) & 0xff;
+        long a1 = (source >> 24) & 0xff;
+        long r1 = source & 0xff;
+        long g1 = (source >> 8) & 0xff;
+        long b1 = (source >> 16) & 0xff;
 
-        unsigned int a0 = (target >> 24) & 0xff;
-        unsigned int r0 = (target & 0xff) * a0;
-        unsigned int g0 = ((target >> 8) & 0xff) * a0;
-        unsigned int b0 = ((target >> 16) & 0xff) * a0;
+        long a0 = (target >> 24) & 0xff;
+        long r0 = (target & 0xff) * a0;
+        long g0 = ((target >> 8) & 0xff) * a0;
+        long b0 = ((target >> 16) & 0xff) * a0;
 
         a0 = ((a1 + a0) << 8) - a0 * a1;
         r0 = ((((r1 << 8) - r0) * a1 + (r0 << 8)) / a0);
