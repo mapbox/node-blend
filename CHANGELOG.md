@@ -1,5 +1,10 @@
 # Changlog
 
+## 0.7.0
+
+ - Modified tinting functionality - now all pixels are converted from rgb to hsl before the tint string is applied and then the pixels are converted back to rgb.
+ - Fixed unsigned integer overflow (#27)
+
 ## 0.6.0
 
  - Added HSL tinting support - a tint string can be passed as a property of an image and all rgb pixels will be set as a function of hsl2rgb conversion. See README for details on usage. (#26)
