@@ -1,5 +1,9 @@
 # Changlog
 
+## 0.7.1
+
+ - Fix potential memory corruption when writing reduced color png images.
+
 ## 0.7.0
 
  - Modified tinting functionality - now all pixels are converted from rgb to hsl before the tint string is applied and then the pixels are converted back to rgb.
