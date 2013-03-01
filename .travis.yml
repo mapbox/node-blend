@@ -4,4 +4,4 @@ node_js:
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install libjpeg8 libjpeg8-dev webp
+  - sudo apt-get install libjpeg8 libjpeg8-dev libwebp-dev
