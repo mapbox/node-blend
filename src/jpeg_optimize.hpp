@@ -31,8 +31,6 @@ void optimize_jpeg(std::ostream& file, JPEGImageReader *layer)
     // Set optimization parameters
     cinfo.optimize_coding = TRUE;
     jpeg_simple_progression(&cinfo);
-    // #ifdef C_ARITH_CODING_SUPPORTED
-            cinfo.arith_code = TRUE;
 
     // Read source file as DCT coefficients
     jvirt_barray_ptr *coef_arrays = jpeg_read_coefficients(&dinfo);
