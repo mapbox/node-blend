@@ -3,6 +3,7 @@
 #include "image_data.hpp"
 #include "png_io.hpp"
 #include "jpeg_io.hpp"
+#include "jpeg_optimize.hpp"
 #include "tint.hpp"
 
 #include <sstream>
@@ -465,12 +466,21 @@ WORKER_BEGIN(Work_Blend) {
         }
 
         // Short-circuit when we're not reencoding.
-        if (size == 0 && !layer->alpha && !baton->reencode &&
+        if (size == 0 && !layer->alpha &&
             image->x == 0 && image->y == 0 &&
             (int)layer->width == baton->width && (int)layer->height == baton->height)
         {
-            baton->stream.write((char *)image->data, image->dataLength);
-            WORKER_END();
+            if (!baton->reencode) {
+                // Pass-through; no reencode requested.
+                baton->stream.write((char *)image->data, image->dataLength);
+                WORKER_END();
+            } else if (image->tint.is_identity() && layer->format() == ImageReader::JPEGFormat) {
+                // Optimize the JPEG
+                optimize_jpeg(baton->stream, (JPEGImageReader *)layer.get());
+                WORKER_END();
+            } else {
+                // Reencode requested, so just continue as normal and do nothing.
+            }
         }
 
         if (!layer->decode()) {

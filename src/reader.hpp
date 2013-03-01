@@ -12,8 +12,16 @@
 #include <string>
 #include <vector>
 
+
 class ImageReader {
 public:
+    enum Format {
+        UnknownFormat,
+        PNGFormat,
+        JPEGFormat,
+        WebPFormat
+    };
+
     virtual bool decode() {
         return false;
     }
@@ -29,6 +37,7 @@ public:
             surface = NULL;
         }
     }
+    virtual inline Format format() const { return UnknownFormat; }
     static ImageReader* create(unsigned char* surface, size_t len);
 
     png_uint_32 width;
@@ -49,6 +58,8 @@ public:
     PNGImageReader(unsigned char* src, size_t len);
     virtual ~PNGImageReader();
     bool decode();
+    inline Format format() const { return PNGFormat; }
+
 
 protected:
     static void readCallback(png_structp png, png_bytep data, png_size_t length);
@@ -69,6 +80,8 @@ public:
     JPEGImageReader(unsigned char* src, size_t len);
     virtual ~JPEGImageReader();
     bool decode();
+    virtual inline Format format() const { return JPEGFormat; }
+    jpeg_decompress_struct& decompressStruct() { return info; }
 
 protected:
     struct JPEGErrorManager {
