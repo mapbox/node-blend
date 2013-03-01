@@ -60,7 +60,8 @@ typedef std::vector<ImagePtr> Images;
 
 enum BlendFormat {
     BLEND_FORMAT_PNG,
-    BLEND_FORMAT_JPEG
+    BLEND_FORMAT_JPEG,
+    BLEND_FORMAT_WEBP
 };
 
 enum AlphaMode {

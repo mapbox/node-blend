@@ -3,6 +3,7 @@
 #include "image_data.hpp"
 #include "png_io.hpp"
 #include "jpeg_io.hpp"
+#include "webp_io.hpp"
 #include "tint.hpp"
 
 #include <sstream>
@@ -158,6 +159,12 @@ Handle<Value> Blend(const Arguments& args) {
             } else if (strcmp(*String::AsciiValue(format_val), "png") == 0) {
                 if (baton->quality == 1 || baton->quality > 256) {
                     return TYPE_EXCEPTION("PNG images must be quantized between 2 and 256 colors.");
+                }
+            } else if (strcmp(*String::AsciiValue(format_val), "webp") == 0) {
+                baton->format = BLEND_FORMAT_WEBP;
+                if (baton->quality == 0) baton->quality = 80;
+                else if (baton->quality < 0 || baton->quality > 100) {
+                    return TYPE_EXCEPTION("WebP quality is range 0-100.");
                 }
             } else {
                 return TYPE_EXCEPTION("Invalid output format.");
@@ -402,6 +409,9 @@ static void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alp
         if (baton->format == BLEND_FORMAT_JPEG) {
             if (baton->quality == 0) baton->quality = 80;
             save_as_jpeg(baton->stream, baton->quality, image);
+        } else if (baton->format == BLEND_FORMAT_WEBP) {
+            if (baton->quality == 0) baton->quality = 80;
+            save_as_webp(baton->stream, baton->quality, image);
         } else {
             // Save as PNG.
             int strategy = Z_DEFAULT_STRATEGY;
