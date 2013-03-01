@@ -28,7 +28,6 @@ std::string webp_encoding_error(WebPEncodingError error) {
         case VP8_ENC_ERROR_PARTITION_OVERFLOW: os << "partition is bigger than 16M"; break;
         case VP8_ENC_ERROR_BAD_WRITE: os << "error while flushing bytes"; break;
         case VP8_ENC_ERROR_FILE_TOO_BIG: os << "file is bigger than 4G"; break;
-        case VP8_ENC_ERROR_USER_ABORT: os << "abort request by user"; break;
         default: os << "unknown error (" << error << ")"; break;
     }
     os << " during encoding";
@@ -44,7 +43,6 @@ void save_as_webp(T1& file, int quality, int compression, T2 const& image)
     }
 
     // Add additional tuning
-    config.image_hint = WEBP_HINT_GRAPH;
     if (compression >= 0) config.method = compression;
 
     bool valid = WebPValidateConfig(&config);
