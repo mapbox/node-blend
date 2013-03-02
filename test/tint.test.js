@@ -58,6 +58,7 @@ describe('tinting combinations on varied images', function() {
                   quality:256,
                   hextree:true
                 };
+                var maxError = path.extname(file) === '.jpeg' ? 0.01 : 0;
                 it(file + '-' + tinter.toString(), function(done) {
                     var buf = fs.readFileSync('./test/fixture/tinting/' + file);
                     var tint_obj;
@@ -71,7 +72,7 @@ describe('tinting combinations on varied images', function() {
                         if (!fs.existsSync(filepath)) {
                             fs.writeFileSync(filepath,data);
                         }
-                        utilities.imageEqualsFile(data, filepath, done);
+                        utilities.imageEqualsFile(data, filepath, maxError, done);
                     });
                 });
             });
