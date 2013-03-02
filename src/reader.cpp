@@ -1,4 +1,5 @@
 #include "reader.hpp"
+#include <webp/decode.h>
 
 #include <exception>
 
@@ -202,11 +203,30 @@ JPEGImageReader::~JPEGImageReader() {
 }
 
 
+WebPImageReader::WebPImageReader(unsigned char* src, size_t len) :
+    ImageReader(src, len) {
+    WebPDecoderConfig config;
+    if (WebPGetFeatures(source, length, &config.input) == VP8_STATUS_OK) {
+        alpha = config.input.has_alpha;
+        width = config.input.width;
+        height = config.input.height;
+    }
+}
+
+bool WebPImageReader::decode() {
+    surface = (unsigned int *)WebPDecodeRGBA(source, length, NULL, NULL);
+    return surface != NULL;
+}
+
 ImageReader* ImageReader::create(unsigned char* src, size_t len) {
     if (png_sig_cmp((png_bytep)src, 0, 8) == 0) {
         return new PNGImageReader(src, len);
-    } else if (src[0] == 255 && src[1] == 216) {
+    } else if (len >= 2 && src[0] == 255 && src[1] == 216) {
         return new JPEGImageReader(src, len);
+    } else if (len >= 12 &&
+               src[0] == 'R' && src[1] == 'I' && src[2] == 'F' && src[3] == 'F' &&
+               src[8] == 'W' && src[9] == 'E' && src[10] == 'B' && src[11] == 'P') {
+        return new WebPImageReader(src, len);
     } else {
         return new ImageReader("Unknown image format");
     }

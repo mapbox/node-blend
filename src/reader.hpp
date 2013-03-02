@@ -84,4 +84,12 @@ protected:
     JPEGErrorManager err;
 };
 
+
+class WebPImageReader : public ImageReader {
+public:
+    WebPImageReader(unsigned char* src, size_t len);
+    bool decode();
+};
+
+
 #endif
