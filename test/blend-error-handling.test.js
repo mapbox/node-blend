@@ -87,7 +87,7 @@ describe('invalid arguments', function() {
             ], {
                 compression:10
             }, function() {});
-        }, /Compression level must be between 1 and 9/);
+        }, /Compression level must be between 0 and 9/);
     });
 
     it('should not allow compression level above what miniz supports', function() {
@@ -99,7 +99,7 @@ describe('invalid arguments', function() {
                 compression:11,
                 encoder:'miniz'
             }, function() {});
-        }, /Compression level must be between 1 and 10/);
+        }, /Compression level must be between 0 and 10/);
     });
 
     it('should not allow negative image dimensions', function() {
