@@ -3,11 +3,11 @@ var blend = require('..');
 var Queue = require('./queue');
 
 // Actual benchmarking code:
-var iterations = 500;
+var iterations = 1000;
 var concurrency = 10;
 
 var images = [
-    fs.readFileSync('test/fixture/tinting/iceland.png')
+    fs.readFileSync('test/fixture/tinting/iceland.webp')
 ];
 
 var written = false;
