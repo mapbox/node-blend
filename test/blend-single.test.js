@@ -37,7 +37,7 @@ describe('reencode', function() {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
             assert.ok(data.length < 10000);
-            utilities.imageEqualsFile(data, 'test/fixture/results/15.jpg', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/15.jpg', 0.01, done);
         });
     });
 
@@ -46,7 +46,7 @@ describe('reencode', function() {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
             assert.ok(data.length < 5000);
-            utilities.imageEqualsFile(data, 'test/fixture/results/16.jpg', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/16.jpg', 0.01, done);
         });
     });
 
