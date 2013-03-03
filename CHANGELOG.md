@@ -1,5 +1,9 @@
 # Changlog
 
+## 0.8.0
+
+ - Add support for webp.
+
 ## 0.7.1
 
  - Fix potential memory corruption when writing reduced color png images.
