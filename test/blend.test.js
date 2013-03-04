@@ -52,7 +52,7 @@ describe('JPEG writing', function() {
         }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/6.jpg', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/6.jpg', 0.01, done);
         });
     });
 
@@ -66,7 +66,7 @@ describe('JPEG writing', function() {
         }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/7.jpg', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/7.jpg', 0.01, done);
         });
     });
 
@@ -79,7 +79,7 @@ describe('JPEG writing', function() {
         }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/8.png', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/8.png', 0.01, done);
         });
     });
 
@@ -92,7 +92,7 @@ describe('JPEG writing', function() {
         }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/9.png', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/9.png', 0.01, done);
         });
     });
 
@@ -125,7 +125,7 @@ describe('JPEG writing', function() {
         ], function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/5.png', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/5.png', 0.01, done);
         });
     });
 

@@ -22,8 +22,8 @@ blend([ image1, image2 ], {
 
 ### Options
 
-- `format`: `jpeg` or `png`
-- `quality`: integer indicating the quality of the final image. Meaning and range differs per format. For JPEG range is from 0-100. It defaults to 80. The lower the number the lower image quality and smaller the final image size. For PNG range is from 2-256. It means the # of colors to reduce the image to using. The lower the number the lower image quality and smaller the final image size.
+- `format`: `jpeg`, `png`, or `webp`
+- `quality`: integer indicating the quality of the final image. Meaning and range differs per format. For JPEG and webp the range is from 0-100. It defaults to 80. The lower the number the lower image quality and smaller the final image size. For PNG range is from 2-256. It means the # of colors to reduce the image to using. The lower the number the lower image quality and smaller the final image size.
 - `width`: integer, default 0: final width of blended image. If options provided with no width value it will default to 0
 - `height`: integer, default 0: final width of blended image. If options provided with no height value it will default to 0
 - `reencode`: boolean, default false
@@ -35,11 +35,11 @@ blend([ image1, image2 ], {
 
 # Installation
 
-To compile, this module requires `libjpeg` and `libpng`.
+To compile, this module requires `libjpeg`, `libpng`, and `libwebp`.
 
 Both /usr and /usr/local with be searched for these dependencies by default.
 
-On Ubuntu, type `sudo apt-get install libjpeg8-dev libpng12-dev` to install them.
+On Ubuntu, type `sudo apt-get install libjpeg8-dev libpng12-dev libwebp-dev` to install them.
 
 Mac OS X ships with png at /usr/X11, which will also be searched.
 

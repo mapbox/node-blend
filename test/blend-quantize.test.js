@@ -14,20 +14,12 @@ var images = [
 ];
 
 
-function checkSimilarity(similarity, done) {
-    return function(err) {
-        if (err && !err.similarity) return done(err);
-        assert.ok(err.similarity >= similarity);
-        done();
-    }
-}
-
 describe('quantization', function() {
     it('should quantize to 128 colors', function(done) {
         blend(images, { format: 'png', quality: 128 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(35, done));
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.01, done);
         });
     });
 
@@ -35,7 +27,7 @@ describe('quantization', function() {
         blend(images, { format: 'png', quality: 64 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(30, done));
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.02, done);
         });
     });
 
@@ -43,7 +35,7 @@ describe('quantization', function() {
         blend(images, { format: 'png', quality: 16 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(24, done));
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.05, done);
         });
     });
 
@@ -51,7 +43,7 @@ describe('quantization', function() {
         blend(images, { format: 'png', quality: 16 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', checkSimilarity(20, done));
+            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.05, done);
         });
     });
 });

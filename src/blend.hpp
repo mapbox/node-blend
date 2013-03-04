@@ -60,7 +60,8 @@ typedef std::vector<ImagePtr> Images;
 
 enum BlendFormat {
     BLEND_FORMAT_PNG,
-    BLEND_FORMAT_JPEG
+    BLEND_FORMAT_JPEG,
+    BLEND_FORMAT_WEBP
 };
 
 enum AlphaMode {
@@ -116,7 +117,7 @@ struct BlendBaton {
         width(0),
         height(0),
         matte(0),
-        compression(Z_DEFAULT_COMPRESSION),
+        compression(-1),
         mode(BLEND_MODE_HEXTREE),
         encoder(BLEND_ENCODER_LIBPNG),
         stream(std::ios::out | std::ios::binary)

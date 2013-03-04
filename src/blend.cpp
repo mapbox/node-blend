@@ -3,6 +3,7 @@
 #include "image_data.hpp"
 #include "png_io.hpp"
 #include "jpeg_io.hpp"
+#include "webp_io.hpp"
 #include "tint.hpp"
 
 #include <sstream>
@@ -159,6 +160,12 @@ Handle<Value> Blend(const Arguments& args) {
                 if (baton->quality == 1 || baton->quality > 256) {
                     return TYPE_EXCEPTION("PNG images must be quantized between 2 and 256 colors.");
                 }
+            } else if (strcmp(*String::AsciiValue(format_val), "webp") == 0) {
+                baton->format = BLEND_FORMAT_WEBP;
+                if (baton->quality == 0) baton->quality = 80;
+                else if (baton->quality < 0 || baton->quality > 100) {
+                    return TYPE_EXCEPTION("WebP quality is range 0-100.");
+                }
             } else {
                 return TYPE_EXCEPTION("Invalid output format.");
             }
@@ -203,14 +210,24 @@ Handle<Value> Blend(const Arguments& args) {
             // default is libpng
         }
 
+        if (options->Has(String::NewSymbol("compression"))) {
+            baton->compression = options->Get(String::NewSymbol("compression"))->Int32Value();
+        }
+
+        int min_compression = Z_NO_COMPRESSION;
         int max_compression = Z_BEST_COMPRESSION;
-        if (baton->encoder == BLEND_ENCODER_MINIZ) max_compression = MZ_UBER_COMPRESSION;
-        baton->compression = options->Get(String::NewSymbol("compression"))->Int32Value();
-        if (baton->compression <= 0) baton->compression = Z_DEFAULT_COMPRESSION;
+        if (baton->format == BLEND_FORMAT_PNG) {
+            if (baton->compression < 0) baton->compression = Z_DEFAULT_COMPRESSION;
+            if (baton->encoder == BLEND_ENCODER_MINIZ) max_compression = MZ_UBER_COMPRESSION;
+        } else if (baton->format == BLEND_FORMAT_WEBP) {
+            min_compression = 0, max_compression = 6;
+            if (baton->compression < 0) baton->compression = -1;
+        }
+
         if (baton->compression > max_compression) {
             std::ostringstream msg;
-            msg << "Compression level must be between 1 and "
-                << max_compression;
+            msg << "Compression level must be between "
+                << min_compression << " and " << max_compression;
             return TYPE_EXCEPTION(msg.str().c_str());
         }
     }
@@ -402,6 +419,9 @@ static void Blend_Encode(image_data_32 const& image, BlendBaton* baton, bool alp
         if (baton->format == BLEND_FORMAT_JPEG) {
             if (baton->quality == 0) baton->quality = 80;
             save_as_jpeg(baton->stream, baton->quality, image);
+        } else if (baton->format == BLEND_FORMAT_WEBP) {
+            if (baton->quality == 0) baton->quality = 80;
+            save_as_webp(baton->stream, baton->quality, baton->compression, image);
         } else {
             // Save as PNG.
             int strategy = Z_DEFAULT_STRATEGY;

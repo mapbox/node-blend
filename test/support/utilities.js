@@ -14,7 +14,12 @@ exec('compare -h', function(error, stdout, stderr) {
     }
 });
 
-exports.imageEqualsFile = function(buffer, file, callback) {
+exports.imageEqualsFile = function(buffer, file, meanError, callback) {
+    if (typeof meanError == 'function') {
+        callback = meanError;
+        meanError = 0;
+    }
+
     file = path.resolve(file);
     if (overwrite) {
         var err = fs.writeFileSync(file, buffer);
@@ -26,7 +31,7 @@ exports.imageEqualsFile = function(buffer, file, callback) {
     if (!image_magick_available) {
         throw new Error("imagemagick 'compare' tool is not available, please install before running tests");
     }
-    var compare = spawn('compare', ['-metric', 'PSNR', '-', file, '/dev/null' ]);
+    var compare = spawn('compare', ['-metric', 'MAE', '-', file, '/dev/null' ]);
     var type = path.extname(file);
     var result = path.join(path.dirname(file), path.basename(file, type) + '.result' + type);
 
@@ -35,23 +40,22 @@ exports.imageEqualsFile = function(buffer, file, callback) {
         error += data.toString();
     });
     compare.on('exit', function(code, signal) {
-        if (!code && error.trim() === 'inf') {
+        if (code) {
+            return callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
+        }
+
+        var similarity = parseFloat(error.match(/^\d+(?:\.\d+)?\s+\((\d+(?:\.\d+)?)\)\s*$/)[1]);
+        if (similarity > meanError) {
+            fs.writeFileSync(result, buffer);
+            var err = new Error('Images not equal: ' + error.trim() + ':\n' + result + '\n'+file);
+            err.similarity = similarity;
+            callback(err);
+        } else {
             if (existsSync(result)) {
                 // clean up old failures
                 fs.unlinkSync(result);
             }
             callback(null);
-        } else {
-            fs.writeFileSync(result, buffer);
-
-            if (code) {
-                callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
-            } else {
-                var similarity = parseFloat(error.trim());
-                var err = new Error('Images not equal (' + similarity + '):\n' + result + '\n'+file);
-                err.similarity = similarity;
-                callback(err);
-            }
         }
     });
 

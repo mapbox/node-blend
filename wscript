@@ -49,6 +49,8 @@ int main() {
 }
 '''
 
+webp_inc_name = 'webp/decode.h'
+webp_search_paths = ['/usr', '/usr/local']
 
 png_inc_name = 'png.h'
 png_search_paths = ['/usr', '/usr/local']
@@ -65,6 +67,13 @@ def set_options(opt):
         default=None,
         help='Directory prefix containing jpeg "lib" and "include" files',
         dest='jpeg_dir'
+    )
+
+    opt.add_option('--with-webp',
+        action='store',
+        default=None,
+        help='Directory prefix containing webp "lib" and "include" files',
+        dest='webp_dir'
     )
 
     opt.add_option('--with-png',
@@ -119,6 +128,22 @@ def _check_jpeg(conf, path):
 
     return False
 
+def _check_webp(conf, path):
+    norm_path = os.path.normpath(os.path.realpath(path))
+    lib = os.path.join(norm_path, 'lib')
+    inc = os.path.join(norm_path, 'include')
+    header = os.path.join(inc, webp_inc_name)
+    if conf.check(
+            lib='webp',
+            fragment=test_prog % header,
+            uselib_store='WEBP',
+            libpath=lib,
+            includes=inc,
+            msg='Checking for libwebp at %s' % norm_path):
+        return True
+
+    return False
+
 def _check_png(conf, path):
     norm_path = os.path.normpath(os.path.realpath(path))
     lib = os.path.join(norm_path, 'lib')
@@ -163,6 +188,21 @@ def configure(conf):
     if not found_jpeg:
         _conf_exit(conf, 'jpeg not found: searched %s \nuse --with-jpeg to point to the location of your jpeg libs and headers' % jpeg_search_paths)
 
+    # webp checks
+    found_webp = False
+    if o.webp_dir:
+        # manual configuration
+        found_webp = _check_webp(conf, o.webp_dir)
+    else:
+        # automatic configuration
+        for path in webp_search_paths:
+            found_webp = _check_webp(conf, path)
+            if found_webp:
+                break
+
+    if not found_webp:
+        _conf_exit(conf, 'webp not found: searched %s \nuse --with-webp to point to the location of your webp libs and headers' % webp_search_paths)
+
 
     # png checks
     found_png = False
@@ -200,7 +240,7 @@ def build(bld):
                         "-fomit-frame-pointer"]
     obj.target = TARGET
     obj.source = ["src/reader.cpp", "src/blend.cpp", "src/palette.cpp"]
-    obj.uselib = ["PNG", "JPEG"]
+    obj.uselib = ["PNG", "JPEG", "WEBP"]
 
 def shutdown():
     if Options.commands['clean']:
