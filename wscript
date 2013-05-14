@@ -28,7 +28,7 @@ int main() {
 
 
 jpeg_inc_name = 'jpeglib.h'
-jpeg_search_paths = ['/usr', '/usr/local']
+jpeg_search_paths = ['/usr/local/opt/jpeg-turbo/','/usr', '/usr/local']
 jpeg_min_version = 8
 jpeg_test_version = '''
 #include "stdio.h"
