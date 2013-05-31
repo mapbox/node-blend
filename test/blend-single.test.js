@@ -73,8 +73,8 @@ describe('reencode', function() {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
             assert.ok(data.length < 8000);
-            assert.ok(data.length > 4000);
-            utilities.imageEqualsFile(data, 'test/fixture/results/30.webp', done);
+            assert.ok(data.length > 3965);
+            utilities.imageEqualsFile(data, 'test/fixture/results/30.webp', 260, done);
         });
     });
 
@@ -84,7 +84,7 @@ describe('reencode', function() {
             assert.deepEqual(warnings, []);
             assert.ok(data.length < 4000);
             assert.ok(data.length > 2000);
-            utilities.imageEqualsFile(data, 'test/fixture/results/31.webp', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/31.webp', 426, done);
         });
     });
 
