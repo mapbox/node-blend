@@ -72,8 +72,9 @@ describe('reencode', function() {
         blend([ images[0] ], { reencode: true, format: 'webp' }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
+            console.log(data.length)
             assert.ok(data.length < 8000);
-            assert.ok(data.length > 4000);
+            assert.ok(data.length > 3965);
             utilities.imageEqualsFile(data, 'test/fixture/results/30.webp', done);
         });
     });

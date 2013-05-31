@@ -309,7 +309,7 @@ Handle<Value> Blend(const Arguments& args) {
         baton->images.push_back(image);
     }
 
-    QUEUE_WORK(baton.release(), Work_Blend, Work_AfterBlend);
+    QUEUE_WORK(baton.release(), Work_Blend, (uv_after_work_cb)Work_AfterBlend);
 
     return scope.Close(Undefined());
 }
@@ -611,3 +611,5 @@ extern "C" void init(Handle<Object> target) {
         static_cast<PropertyAttribute>(ReadOnly | DontDelete)
     );
 }
+
+NODE_MODULE(blend, init);

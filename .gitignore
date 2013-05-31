@@ -1,5 +1,4 @@
+build
 .DS_Store
-.lock-wscript
+lib/blend.node
 node_modules/
-/build
-/lib/blend.node
