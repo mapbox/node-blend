@@ -3,6 +3,10 @@ var op = mapnik.compositeOp.src_over;
 
 module.exports = function(layers, options, callback) {
     // make shallow copy
+    if (!callback) {
+       callback = options;
+       options = {}
+    }
     var layers = layers.slice(0);
     if (!layers || !(layers instanceof Array)) {
         throw new Error('First argument must be an array of Buffers');
