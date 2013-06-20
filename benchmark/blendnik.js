@@ -2,6 +2,20 @@ var mapnik = require('mapnik');
 var op = mapnik.compositeOp.src_over;
 
 module.exports = function(layers, options, callback) {
+    if (!layers || !(layers instanceof Array)) {
+        throw new Error('First argument must be an array of Buffers');
+    }
+    if (layers.length < 1) {
+        throw new Error('First argument must contain at least one Buffer');
+    }
+    if (!(layers[0] instanceof Buffer)) {
+        throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+    }
+    if (options && options.format) {
+        if (options.format != 'png' && options.format != 'jpeg') {
+            throw new Error('Invalid output format');
+        }
+    }
     var canvas = new mapnik.Image(options.width|0, options.height|0);
     compose(canvas, layers, function(err, canvas) {
         if (err) return callback(err);
@@ -10,6 +24,9 @@ module.exports = function(layers, options, callback) {
             var format = 'png';
             switch (options.format) {
             case 'jpg':
+                format = 'jpeg' + (options.quality || '80');
+                break;
+            case 'jpeg':
                 format = 'jpeg' + (options.quality || '80');
                 break;
             case 'png':
@@ -41,10 +58,13 @@ function compose(canvas, layers, callback) {
     if (!layers.length) return callback(null, canvas);
 
     var layer = layers.shift();
+    if (layer instanceof Buffer && !layer.buffer) {
+        layer.buffer = layer;
+    }
     var opts = {
         dx: layer.x || 0,
         dy: layer.y || 0,
-        image_filters: tintToString(layer.tint),
+        image_filters: layer.tint ? tintToString(layer.tint): '',
         comp_op: op
     };
 
