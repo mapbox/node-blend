@@ -45,7 +45,11 @@ exports.imageEqualsFile = function(buffer, file, meanError, callback) {
             return callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
         }
 
-        var similarity = parseFloat(error.match(/^\d+(?:\.\d+)?\s+\((\d+(?:\.\d+)?)\)\s*$/)[1]);
+        var match = error.match(/^\d+(?:\.\d+)?\s+\((\d+(?:\.\d+)?)\)\s*$/);
+        if (!match) {
+            throw new Error("could not match similarity string in " + error);
+        }
+        var similarity = parseFloat(match[1]);
         if (similarity > meanError) {
             var err = new Error('Images not equal: ' + error.trim() + ':\n' + result + '\n'+file);
             err.similarity = similarity;
