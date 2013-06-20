@@ -20,16 +20,30 @@ module.exports = function(layers, options, callback) {
         }
     }
     if (options && options.format) {
-        if (options.format != 'png' && options.format != 'jpeg') {
+        if (options.format != 'png' && options.format != 'jpeg' && options.format != 'webp') {
             throw new Error('Invalid output format');
         }
     }
-    var canvas = new mapnik.Image(options.width|0, options.height|0);
+    // node-blend internally creates first canvas based on
+    // first image's size if width/height are not supplied
+    // this is a suboptimal way of emulating that for now
+    if (!options.width || !options.height) {
+        if (layers[0] instanceof Buffer && !layers[0].buffer) {
+            layers[0].buffer = layers[0];
+        }
+        var im = new mapnik.Image.fromBytesSync(layers[0].buffer);
+        options.width = im.width();
+        options.height = im.height();
+    }
+    var canvas = new mapnik.Image(options.width, options.height);
     compose(canvas, layers, function(err, canvas) {
         if (err) return callback(err);
         canvas.demultiply(function(err) {
             if (err) return callback(err);
-            var format = 'png';
+            var format = '';
+            if (!options.format) {
+                options.format = 'png';
+            }
             switch (options.format) {
             case 'jpg':
                 format = 'jpeg' + (options.quality || '80');
@@ -38,7 +52,22 @@ module.exports = function(layers, options, callback) {
                 format = 'jpeg' + (options.quality || '80');
                 break;
             case 'png':
-                format = 'png' + (options.quality || '');
+                format = 'png';
+                if (options.quality) {
+                    format += '8:c='+options.quality;
+                }
+                if (options.compression) {
+                    format += ':z='+options.compression;
+                }
+                break;
+            case 'webp':
+                format = 'webp';
+                if (options.quality) {
+                    format += ':quality='+options.quality;
+                }
+                if (options.compression) {
+                    format += ':method='+options.compression;
+                }
                 break;
             }
             canvas.encode(format, {}, function(err, buffer) {
