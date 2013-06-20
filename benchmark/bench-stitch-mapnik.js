@@ -1,11 +1,10 @@
 var fs = require('fs');
-var blend = require('..');
+var blendnik = require('./blendnik');
 var Queue = require('./queue');
 
 // Actual benchmarking code:
 var iterations = 500;
 var concurrency = 10;
-
 
 var images = [
     { buffer: fs.readFileSync('test/fixture/5241-12663.png'), x: -43, y: -120 },
@@ -30,7 +29,7 @@ var written = false;
 
 var queue = new Queue(function(i, done) {
     var images_copy = images.slice(0);
-    blend(images_copy, {
+    blendnik(images_copy, {
         width: 700,
         height: 600,
         quality: 256,
