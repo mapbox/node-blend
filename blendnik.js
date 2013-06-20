@@ -63,6 +63,9 @@ module.exports = function(layers, options, callback) {
                 if (options.compression) {
                     format += ':z='+options.compression;
                 }
+                if (options.hextree && options.hextree == true) {
+                    format += ':m=h';
+                }
                 break;
             case 'webp':
                 format = 'webp';
