@@ -28,8 +28,7 @@ var images = [
 var written = false;
 
 var queue = new Queue(function(i, done) {
-    var images_copy = images.slice(0);
-    blendnik(images_copy, {
+    blendnik(images, {
         width: 700,
         height: 600,
         quality: 256,

@@ -18,8 +18,7 @@ var images = [
 var written = false;
 
 var queue = new Queue(function(i, done) {
-    var images_copy = images.slice(0);
-    blend(images_copy, {
+    blend(images, {
         width: 256,
         height: 256,
         quality: 256,

@@ -2,6 +2,8 @@ var mapnik = require('mapnik');
 var op = mapnik.compositeOp.src_over;
 
 module.exports = function(layers, options, callback) {
+    // make shallow copy
+    var layers = layers.slice(0);
     if (!layers || !(layers instanceof Array)) {
         throw new Error('First argument must be an array of Buffers');
     }
@@ -39,7 +41,9 @@ module.exports = function(layers, options, callback) {
                 format = 'png' + (options.quality || '');
                 break;
             }
-            canvas.encode(format, {}, callback);
+            canvas.encode(format, {}, function(err, buffer) {
+                return callback(err,buffer,[]); // [] is for warnings
+            });
         });
     });
 };
