@@ -2,12 +2,10 @@ var mapnik = require('mapnik');
 var op = mapnik.compositeOp.src_over;
 
 module.exports = function(layers, options, callback) {
-    // make shallow copy
     if (!callback) {
        callback = options;
        options = {}
     }
-    var layers = layers.slice(0);
     if (!layers || !(layers instanceof Array)) {
         throw new Error('First argument must be an array of Buffers');
     }
@@ -28,6 +26,8 @@ module.exports = function(layers, options, callback) {
             throw new Error('Invalid output format');
         }
     }
+    // make shallow copy
+    layers = layers.slice(0);
     // node-blend internally creates first canvas based on
     // first image's size if width/height are not supplied
     // this is a suboptimal way of emulating that for now
