@@ -1,5 +1,5 @@
 var fs = require('fs');
-var blendnik = require('./blendnik');
+var blendnik = require('../blendnik.js');
 var Queue = require('./queue');
 
 // Actual benchmarking code:

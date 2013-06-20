@@ -8,8 +8,14 @@ module.exports = function(layers, options, callback) {
     if (layers.length < 1) {
         throw new Error('First argument must contain at least one Buffer');
     }
-    if (!(layers[0] instanceof Buffer)) {
-        throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+    if (layers[0].buffer) {
+        if (!(layers[0].buffer instanceof Buffer)) {
+            throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+        }
+    } else {
+        if (!(layers[0] instanceof Buffer)) {
+            throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+        }
     }
     if (options && options.format) {
         if (options.format != 'png' && options.format != 'jpeg') {
