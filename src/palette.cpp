@@ -24,6 +24,7 @@
 
 // node
 #include <node_buffer.h>
+#include <node_version.h>
 
 // stl
 #include <vector>
@@ -343,7 +344,10 @@ Handle<Value> Palette::ToBuffer(const Arguments& args)
         palette[pos++] = (i < alphaLength) ? alpha[i] : 0xFF;
     }
 
-    node::Buffer *buffer = node::Buffer::New(palette, length * 4);
-    return scope.Close(buffer->handle_);
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
+    return scope.Close(node::Buffer::New(palette, length * 4));
+#else
+    return scope.Close(node::Buffer::New(palette, length * 4)->handle_);
+#endif
 }
 

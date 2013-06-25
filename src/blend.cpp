@@ -8,6 +8,8 @@
 
 #include <sstream>
 
+#include <node_version.h>
+
 using namespace v8;
 using namespace node;
 
@@ -576,7 +578,11 @@ WORKER_BEGIN(Work_AfterBlend) {
         std::string result = baton->stream.str();
         Local<Value> argv[] = {
             Local<Value>::New(Null()),
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
+            Local<Value>::New(Buffer::New((char *)result.data(), result.length())),
+#else
             Local<Value>::New(Buffer::New((char *)result.data(), result.length())->handle_),
+#endif
             Local<Value>::New(warnings)
         };
         TRY_CATCH_CALL(Context::GetCurrent()->Global(), baton->callback, 3, argv);
