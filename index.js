@@ -1,22 +1,163 @@
-var blend = require('./lib/blend');
-module.exports = blend.blend;
-module.exports.Palette = blend.Palette;
-module.exports.libpng = blend.libpng;
-module.exports.libjpeg = blend.libjpeg;
-module.exports.rgb2hsl2 = blend.rgb2hsl2;
-module.exports.hsl2rgb2 = blend.hsl2rgb2;
+var mapnik = require('mapnik');
+var op = mapnik.compositeOp.src_over;
 
-var Palette = blend.Palette;
-Palette.prototype.clone = function() {
-    return new this.constructor(this.toBuffer());
+module.exports = function(layers, options, callback) {
+    if (!callback) {
+       callback = options;
+       options = {}
+    }
+    if (!layers || !(layers instanceof Array)) {
+        throw new Error('First argument must be an array of Buffers');
+    }
+    if (layers.length < 1) {
+        throw new Error('First argument must contain at least one Buffer');
+    }
+    if (layers[0].buffer) {
+        if (!(layers[0].buffer instanceof Buffer)) {
+            throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+        }
+    } else {
+        if (!(layers[0] instanceof Buffer)) {
+            throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+        }
+    }
+    if (options && options.format) {
+        if (options.format != 'png' && options.format != 'jpeg' && options.format != 'webp') {
+            throw new Error('Invalid output format');
+        }
+    }
+    // make shallow copy
+    layers = layers.slice(0);
+    // node-blend internally creates first canvas based on
+    // first image's size if width/height are not supplied
+    // this is a suboptimal way of emulating that for now
+    if (!options.width || !options.height) {
+        if (layers[0] instanceof Buffer && !layers[0].buffer) {
+            layers[0].buffer = layers[0];
+        }
+        var im = new mapnik.Image.fromBytesSync(layers[0].buffer);
+        options.width = im.width();
+        options.height = im.height();
+    }
+    var canvas = new mapnik.Image(options.width, options.height);
+    compose(canvas, layers, function(err, canvas) {
+        if (err) return callback(err);
+        canvas.demultiply(function(err) {
+            if (err) return callback(err);
+            var format = '';
+            if (!options.format) {
+                options.format = 'png';
+            }
+            switch (options.format) {
+            case 'jpg':
+                format = 'jpeg' + (options.quality || '80');
+                break;
+            case 'jpeg':
+                format = 'jpeg' + (options.quality || '80');
+                break;
+            case 'png':
+                format = 'png';
+                if (options.quality) {
+                    format += '8:c='+options.quality;
+                }
+                if (options.compression) {
+                    format += ':z='+options.compression;
+                }
+                if (options.hextree && options.hextree == true) {
+                    format += ':m=h';
+                }
+                break;
+            case 'webp':
+                format = 'webp';
+                if (options.quality) {
+                    format += ':quality='+options.quality;
+                }
+                if (options.compression) {
+                    format += ':method='+options.compression;
+                }
+                break;
+            }
+            canvas.encode(format, {}, function(err, buffer) {
+                return callback(err,buffer,[]); // [] is for warnings
+            });
+        });
+    });
 };
 
-// Accepts an array of hex strings (with 6 or 8 hex characters).
-Palette.fromJSON = function(json) {
-    var palette = json.map(function(str) {
-        return str.length === 6 ? str + 'ff' : str;
-    }).join('');
-    return new Palette(new Buffer(palette, 'hex'), 'rgba');
+function tintToString(tint) {
+    var s = 'hsla(';
+    if (tint.h) s += tint.h[0] + 'x' + tint.h[1] + ';'; 
+    else s += '0x1;';
+
+    if (tint.s) s += tint.s[0] + 'x' + tint.s[1] + ';';
+    else s += '0x1;';
+
+    if (tint.l) s += tint.l[0] + 'x' + tint.l[1] + ';';
+    else s += '0x1;';
+
+    if (tint.a) s += tint.a[0] + 'x' + tint.a[1] + ')';
+    else s += '0x1)';
+    return s;
+}
+
+function compose(canvas, layers, callback) {
+    if (!layers.length) return callback(null, canvas);
+
+    var layer = layers.shift();
+    if (layer instanceof Buffer && !layer.buffer) {
+        layer.buffer = layer;
+    }
+    var opts = {
+        dx: layer.x || 0,
+        dy: layer.y || 0,
+        image_filters: layer.tint ? tintToString(layer.tint): '',
+        comp_op: op
+    };
+
+    // Create group of layers to be composited into a stack.
+    // Used to composite tiles of a static API image as individual tiles
+    // before the entire canvas is composited. This compensates for the lack
+    // of offset handling in mapnik.VectorTile.render().
+    if (layer.group) {
+        var group = [layer];
+        while (layers.length && layer.group === layers[0].group) {
+            group.push(layers.shift());
+        }
+        // Clear out values which are now applied at the group level.
+        for (var i = 0; i < group.length; i++) {
+            delete group[i].group;
+            delete group[i].x;
+            delete group[i].y;
+        }
+
+        compose(new mapnik.Image(256, 256), group, function(err, grouped) {
+            if (err) return callback(err);
+            canvas.composite(grouped, opts, function(err, canvas) {
+                if (err) return callback(err);
+                compose(canvas, layers, callback);
+            });
+        });
+    } else if (layer.buffer instanceof mapnik.VectorTile) {
+        var vtile = layer.buffer;
+        vtile.render(vtile.map, canvas, vtile.opts, function(err, composed) {
+            if (err) return callback(err);
+            composed.premultiply(function(err) {
+                if (err) return callback(err);
+                compose(canvas, layers, callback);
+            });
+        });
+    } else {
+        mapnik.Image.fromBytes(layer.buffer, function(err, image) {
+            if (err) return callback(err);
+            image.premultiply(function(err, image) {
+                if (err) return callback(err);
+                canvas.composite(image, opts, function(err, canvas) {
+                    if (err) return callback(err);
+                    compose(canvas, layers, callback);
+                });
+            });
+        });
+    }
 };
 
 module.exports.hsl2rgb = function(h, s, l) {
