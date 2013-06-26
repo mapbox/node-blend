@@ -26,110 +26,133 @@ var images = [
 
 
 describe('invalid arguments', function() {
-    it('should throw with a bogus first argument', function() {
-        assert.throws(function() {
-            blend(true, function(err) {});
-        }, /First argument must be an array of Buffers/);
+    it('should throw with a bogus first argument', function(done) {
+        blend(true, function(err) {
+            assert.ok(err);
+            assert.equal('First argument must be an array of Buffers', err.message);
+            done();
+        });
     });
 
-    it('should throw with an empty first argument', function() {
-        assert.throws(function() {
-            blend([], function(err) {});
-        }, /First argument must contain at least one Buffer/);
+    it('should throw with an empty first argument', function(done) {
+        blend([], function(err) {
+            assert.ok(err);
+            assert.equal('First argument must contain at least one Buffer', err.message);
+            done();
+        });
     });
 
-    it('should throw if the first argument contains bogus elements', function() {
-        assert.throws(function() {
-            blend([1, 2, 3], function(err) {});
-        }, /All elements must be Buffers or objects with a 'buffer' property/);
+    it('should throw if the first argument contains bogus elements', function(done) {
+        blend([1, 2, 3], function(err) {
+            assert.ok(err);
+            assert.equal('First argument must contain at least one Buffer', err.message);
+            done();
+        });
     });
 
-    it('should not allow unknown formats', function() {
-        assert.throws(function() {
-            blend([
-                fs.readFileSync('test/fixture/1c.jpg'),
-                fs.readFileSync('test/fixture/2.png')
-            ], {
-                format: 'xbm'
-            }, function() {});
-        }, /Invalid output format/);
+    it('should not allow unknown formats', function(done) {
+        blend([
+            fs.readFileSync('test/fixture/1c.jpg'),
+            fs.readFileSync('test/fixture/2.png')
+        ], {
+            format: 'xbm'
+        }, function(err) {
+            assert.ok(err);
+            assert.equal("Invalid output format", err.message);
+            done();
+        });
     });
 
-    it('should not allow negative quality', function() {
-        assert.throws(function() {
-            blend([
-                fs.readFileSync('test/fixture/1c.jpg'),
-                fs.readFileSync('test/fixture/2.png')
-            ], {
-                format: 'jpeg',
-                quality: -10
-            }, function() {});
-        }, /JPEG quality is range 0-100/);
+    it('should not allow negative quality', function(done) {
+        blend([
+            fs.readFileSync('test/fixture/1c.jpg'),
+            fs.readFileSync('test/fixture/2.png')
+        ], {
+            format: 'jpeg',
+            quality: -10
+        }, function(err) {
+            assert.ok(err);
+            assert.equal("invalid jpeg quality: '-10'", err.message);
+            done();
+        });
     });
 
-    it('should not allow quality above 100', function() {
-        assert.throws(function() {
-            blend([
-                fs.readFileSync('test/fixture/1c.jpg'),
-                fs.readFileSync('test/fixture/2.png')
-            ], {
-                format: 'jpeg',
-                quality: 110
-            }, function() {});
-        }, /JPEG quality is range 0-100/);
+    it('should not allow quality above 100', function(done) {
+        blend([
+            fs.readFileSync('test/fixture/1c.jpg'),
+            fs.readFileSync('test/fixture/2.png')
+        ], {
+            format: 'jpeg',
+            quality: 110
+        }, function(err) {
+            assert.ok(err);
+            assert.equal("invalid jpeg quality: '110'", err.message);
+            done();
+        });
     });
 
-    it('should not allow compression level above what zlib supports', function() {
-        assert.throws(function() {
-            blend([
-                fs.readFileSync('test/fixture/1c.jpg'),
-                fs.readFileSync('test/fixture/2.png')
-            ], {
-                compression:10
-            }, function() {});
-        }, /Compression level must be between 0 and 9/);
+    it('should not allow compression level above what zlib supports', function(done) {
+        blend([
+            fs.readFileSync('test/fixture/1c.jpg'),
+            fs.readFileSync('test/fixture/2.png')
+        ], {
+            compression:10
+        }, function(err) {
+            assert.ok(err);
+            assert.equal("invalid compression value: (only -1 through 9 are valid)", err.message);
+            done();
+        });
     });
 
-    it('should not allow compression level above what miniz supports', function() {
-        assert.throws(function() {
-            blend([
-                fs.readFileSync('test/fixture/1c.jpg'),
-                fs.readFileSync('test/fixture/2.png')
-            ], {
-                compression:11,
-                encoder:'miniz'
-            }, function() {});
-        }, /Compression level must be between 0 and 10/);
+    it('should not allow compression level above what miniz supports', function(done) {
+        blend([
+            fs.readFileSync('test/fixture/1c.jpg'),
+            fs.readFileSync('test/fixture/2.png')
+        ], {
+            compression:11,
+            encoder:'miniz'
+        }, function(err) {
+            assert.ok(err);
+            assert.equal("invalid compression parameter: 11 (only -1 through 10 are valid)", err.message);
+            done();
+        });
     });
 
-    it('should not allow negative image dimensions', function() {
-        assert.throws(function() {
-            blend(images, { width: -20 }, function() {});
-        }, /Image dimensions must be greater than 0/);
+    // @TODO node-mapnik is crashing on negative image dimensions.
+//    it('should not allow negative image width', function(done) {
+//        blend(images, { width: -20, height: 20 }, function(err) {
+//            assert.ok(err);
+//            done();
+//        });
+//    });
+
+//    it('should not allow negative image height', function(done) {
+//        blend(images, { width: 20, height: -20 }, function(err) {
+//            assert.ok(err);
+//            done();
+//        });
+//    });
+
+    it('should not allow empty objects', function(done) {
+        blend([
+            { buffer: images[1] },
+            { }
+        ], function(err) {
+            assert.ok(err);
+            assert.equal("All elements must be Buffers or objects with a 'buffer' property", err.message);
+            done();
+        });
     });
 
-    it('should not allow negative image dimensions', function() {
-        assert.throws(function() {
-            blend(images, { height: -20 }, function() {});
-        }, /Image dimensions must be greater than 0/);
-    });
-
-    it('should not allow empty objects', function() {
-        assert.throws(function() {
-            blend([
-                { buffer: images[1] },
-                { }
-            ], function() {});
-        }, /All elements must be Buffers or objects with a 'buffer' property/);
-    });
-
-    it('should not allow objects that don\'t have a Buffer', function() {
-        assert.throws(function() {
-            blend([
-                { buffer: images[1] },
-                { buffer: false }
-            ], function() {});
-        }, /All elements must be Buffers or objects with a 'buffer' property/);
+    it('should not allow objects that don\'t have a Buffer', function(done) {
+        blend([
+            { buffer: images[1] },
+            { buffer: false }
+        ], function(err) {
+            assert.ok(err);
+            assert.equal("All elements must be Buffers or objects with a 'buffer' property", err.message);
+            done();
+        });
     });
 });
 
@@ -139,7 +162,7 @@ describe('invalid images', function() {
         buffer.fill(0);
         blend([ buffer, buffer ], function(err, data) {
             if (!err) return done(new Error('Error expected'));
-            assert.equal(err.message, "Unknown image format");
+            assert.equal(err.message, "Failed to load from buffer");
             done();
         });
     });
@@ -148,7 +171,7 @@ describe('invalid images', function() {
         var buffer = new Buffer('\x89\x50\x4E\x47\x0D\x0A\x1A\x0A' + Array(48).join('\0'), 'binary');
         blend([ buffer, images[1] ], function(err, data) {
             if (!err) return done(new Error('Error expected'));
-            assert.equal(err.message, '[00][00][00][00]: invalid chunk type');
+            assert.equal(err.message, 'failed to read invalid png');
             done();
         });
     });
@@ -157,7 +180,7 @@ describe('invalid images', function() {
         var buffer = new Buffer('\x89\x50\x4E\x47\x0D\x0A\x1A\x0A', 'binary');
         blend([ buffer, images[1] ], function(err, data) {
             if (!err) return done(new Error('Error expected'));
-            assert.equal(err.message, 'Read Error');
+            assert.equal(err.message, 'failed to read invalid png');
             done();
         });
     });
@@ -181,7 +204,7 @@ describe('invalid images', function() {
     it('should report a bogus Huffman table definition', function(done) {
         blend([ images[2], images[3] ], function(err, data, warnings) {
             if (!err) return done(new Error('expected error'));
-            assert.equal(err.message, 'Bogus Huffman table definition');
+            assert.equal(err.message, 'JPEG Reader: libjpeg could not read image');
 
             // Test working state after error.
             blend([ images[2] ], { reencode: true }, done);
@@ -198,8 +221,8 @@ describe('invalid images', function() {
             fs.readFileSync('test/fixture/2.png')
         ], function(err, data) {
             assert.ok(err);
-            assert.ok(err.message === "Premature end of JPEG file" ||
-                      err.message === "JPEG datastream contains no image");
+            assert.ok('JPEG Reader: failed to read header' === err.message ||
+                'JPEG Reader: libjpeg could not read image' === err.message);
             done();
         });
     });
@@ -210,8 +233,7 @@ describe('invalid images', function() {
             fs.readFileSync('test/fixture/2.png')
         ], function(err, data) {
             assert.ok(err);
-            assert.ok(err.message === "Corrupt JPEG data: bad Huffman code" ||
-                      err.message === "Unsupported marker type 0xa8");
+            assert.equal('JPEG Reader: libjpeg could not read image', err.message);
             done();
         });
     });

@@ -3,28 +3,21 @@ var op = mapnik.compositeOp.src_over;
 
 module.exports = function(layers, options, callback) {
     if (!callback) {
-       callback = options;
-       options = {}
+        callback = options;
+        options = {};
+    } else {
+        options = options || {};
     }
-    if (!layers || !(layers instanceof Array)) {
-        throw new Error('First argument must be an array of Buffers');
-    }
-    if (layers.length) {
-        if (layers[0].buffer) {
-            if (!(layers[0].buffer instanceof Buffer)) {
-                throw new Error("All elements must be Buffers or objects with a 'buffer' property");
-            }
-        } else {
-            if (!(layers[0] instanceof Buffer)) {
-                throw new Error("All elements must be Buffers or objects with a 'buffer' property");
-            }
-        }
-        if (options && options.format) {
-            if (options.format != 'png' && options.format != 'jpeg' && options.format != 'webp') {
-                throw new Error('Invalid output format');
-            }
-        }
-    }
+
+    if (!layers || !(layers instanceof Array))
+        return callback(new Error('First argument must be an array of Buffers'));
+
+    if (layers.length < 1)
+        return callback(new Error('First argument must contain at least one Buffer'));
+
+    if (['png','jpeg','webp'].indexOf(options.format || 'png') === -1)
+        return callback(new Error('Invalid output format'));
+
     // make shallow copy
     layers = layers.slice(0);
     // node-blend internally creates first canvas based on
@@ -34,9 +27,16 @@ module.exports = function(layers, options, callback) {
         if (layers[0] instanceof Buffer && !layers[0].buffer) {
             layers[0].buffer = layers[0];
         }
-        var im = new mapnik.Image.fromBytesSync(layers[0].buffer);
-        options.width = im.width();
-        options.height = im.height();
+        if (!(layers[0].buffer instanceof Buffer)) {
+            return callback(new Error('First argument must contain at least one Buffer'));
+        }
+        try {
+            var im = new mapnik.Image.fromBytesSync(layers[0].buffer);
+            options.width = im.width();
+            options.height = im.height();
+        } catch(err) {
+            return callback(err);
+        }
     }
     var canvas = new mapnik.Image(options.width, options.height);
 
@@ -161,7 +161,7 @@ function compose(canvas, layers, callback) {
                 compose(canvas, layers, callback);
             });
         });
-    } else {
+    } else if (layer.buffer instanceof Buffer) {
         mapnik.Image.fromBytes(layer.buffer, function(err, image) {
             if (err) return callback(err);
             image.premultiply(function(err, image) {
@@ -172,6 +172,8 @@ function compose(canvas, layers, callback) {
                 });
             });
         });
+    } else {
+        return callback(new Error("All elements must be Buffers or objects with a 'buffer' property"));
     }
 };
 
