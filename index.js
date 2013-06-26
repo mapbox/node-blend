@@ -42,8 +42,16 @@ module.exports = function(layers, options, callback) {
     var canvas = new mapnik.Image(options.width, options.height);
 
     // set matte background color on the canvas image.
+    // the color is premultiplied manually here in preparation
+    // for final demultiplication later.
     if (options.matte) try {
-        canvas.background = new mapnik.Color('#' + options.matte);
+        var color = new mapnik.Color('#' + options.matte);
+        canvas.background = new mapnik.Color(
+            (color.r * color.a / 255) | 0,
+            (color.g * color.a / 255) | 0,
+            (color.b * color.a / 255) | 0,
+            color.a
+        );
     } catch(err) {
         return callback(err);
     }
