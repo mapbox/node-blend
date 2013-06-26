@@ -22,8 +22,7 @@ describe('per-image settings', function() {
         ], function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            assert.deepEqual(images[0], data);
-            done();
+            utilities.imageEqualsFile(data, 'test/fixture/1.png', done);
         });
     });
 
@@ -52,17 +51,6 @@ describe('per-image settings', function() {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/23.png', done);
-        });
-    });
-
-    it('should error out when the resulting image doesn\'t have a width or height', function(done) {
-        blend([
-            { buffer: images[1], x: -300, y: -300 },
-            { buffer: images[0], x: -300, y: -300 }
-        ], function(err) {
-            assert.ok(err);
-            assert.equal(err.message, 'Image dimensions 0x0 are invalid');
-            done();
         });
     });
 
@@ -108,13 +96,14 @@ describe('per-image settings', function() {
         });
     });
 
-    it('should support miniz MZ_UBER_COMPRESSION', function(done) {
+    // @TODO currently miniz encoding appears to be broken in mapnik?
+    it.skip('should support miniz MZ_UBER_COMPRESSION', function(done) {
         blend([], {
             width: 128,
             height: 128,
             matte: '12345678',
-            encoder:'miniz',
-            compression:10
+            encoder: 'miniz',
+            compression: 10
         }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
@@ -124,10 +113,12 @@ describe('per-image settings', function() {
         });
     });
 
-    it('should not require image dimensions if there are no images', function() {
-        assert.throws(function() {
-            blend([], { matte: '12345678' }, function() {});
-        }, /Without buffers, you have to specify width and height/);
+    it('should require image dimensions if there are no images', function(done) {
+        blend([], { matte: '12345678' }, function(err) {
+            assert.ok(err);
+            assert.equal('Without buffers, you have to specify width and height', err.message);
+            done();
+        });
     });
 
     it('should nicely stitch the images together', function(done) {

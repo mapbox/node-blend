@@ -12,8 +12,11 @@ module.exports = function(layers, options, callback) {
     if (!layers || !(layers instanceof Array))
         return callback(new Error('First argument must be an array of Buffers'));
 
-    if (layers.length < 1)
+    if (layers.length < 1 && !options.matte)
         return callback(new Error('First argument must contain at least one Buffer'));
+
+    if (!layers.length && options.matte && (!options.width || !options.height))
+        return callback(new Error('Without buffers, you have to specify width and height'));
 
     if (['png','jpeg','webp'].indexOf(options.format || 'png') === -1)
         return callback(new Error('Invalid output format'));
@@ -30,14 +33,14 @@ module.exports = function(layers, options, callback) {
         if (!(layers[0].buffer instanceof Buffer)) {
             return callback(new Error('First argument must contain at least one Buffer'));
         }
-        try {
-            var im = new mapnik.Image.fromBytesSync(layers[0].buffer);
-            options.width = im.width();
-            options.height = im.height();
-        } catch(err) {
-            return callback(err);
-        }
+        return mapnik.Image.fromBytes(layers[0].buffer, function(err, image) {
+            if (err) return callback(err);
+            options.width = image.width();
+            options.height = image.height();
+            return module.exports(layers, options, callback);
+        });
     }
+
     var canvas = new mapnik.Image(options.width, options.height);
 
     // set matte background color on the canvas image.
@@ -80,6 +83,9 @@ module.exports = function(layers, options, callback) {
                 }
                 if (options.hextree && options.hextree == true) {
                     format += ':m=h';
+                }
+                if (options.encoder && options.encoder === 'miniz') {
+                    format += ':e=miniz';
                 }
                 break;
             case 'webp':
