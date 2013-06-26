@@ -118,8 +118,7 @@ describe('invalid arguments', function() {
         });
     });
 
-    // @TODO node-mapnik is crashing on negative image dimensions.
-    it.skip('should not allow negative image width', function(done) {
+    it('should not allow negative image width', function(done) {
         blend(images, { width: -20, height: 20 }, function(err) {
             assert.ok(err);
             done();
