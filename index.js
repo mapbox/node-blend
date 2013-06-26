@@ -9,21 +9,20 @@ module.exports = function(layers, options, callback) {
     if (!layers || !(layers instanceof Array)) {
         throw new Error('First argument must be an array of Buffers');
     }
-    if (layers.length < 1) {
-        throw new Error('First argument must contain at least one Buffer');
-    }
-    if (layers[0].buffer) {
-        if (!(layers[0].buffer instanceof Buffer)) {
-            throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+    if (layers.length) {
+        if (layers[0].buffer) {
+            if (!(layers[0].buffer instanceof Buffer)) {
+                throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+            }
+        } else {
+            if (!(layers[0] instanceof Buffer)) {
+                throw new Error("All elements must be Buffers or objects with a 'buffer' property");
+            }
         }
-    } else {
-        if (!(layers[0] instanceof Buffer)) {
-            throw new Error("All elements must be Buffers or objects with a 'buffer' property");
-        }
-    }
-    if (options && options.format) {
-        if (options.format != 'png' && options.format != 'jpeg' && options.format != 'webp') {
-            throw new Error('Invalid output format');
+        if (options && options.format) {
+            if (options.format != 'png' && options.format != 'jpeg' && options.format != 'webp') {
+                throw new Error('Invalid output format');
+            }
         }
     }
     // make shallow copy
