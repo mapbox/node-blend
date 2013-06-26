@@ -40,6 +40,14 @@ module.exports = function(layers, options, callback) {
         options.height = im.height();
     }
     var canvas = new mapnik.Image(options.width, options.height);
+
+    // set matte background color on the canvas image.
+    if (options.matte) try {
+        canvas.background = new mapnik.Color('#' + options.matte);
+    } catch(err) {
+        return callback(err);
+    }
+
     compose(canvas, layers, function(err, canvas) {
         if (err) return callback(err);
         canvas.demultiply(function(err) {
