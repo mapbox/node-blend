@@ -125,7 +125,7 @@ describe('invalid arguments', function() {
         });
     });
 
-    it.skip('should not allow negative image height', function(done) {
+    it('should not allow negative image height', function(done) {
         blend(images, { width: 20, height: -20 }, function(err) {
             assert.ok(err);
             done();
