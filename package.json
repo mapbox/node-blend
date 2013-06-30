@@ -17,6 +17,7 @@
         "mocha": "0.11.x"
     },
     "scripts": {
-        "test": "mocha -R spec"
+        "test": "mocha -R spec",
+        "install": "node-waf configure build"
     }
 }
