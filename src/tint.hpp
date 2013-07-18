@@ -23,21 +23,10 @@ static void rgb2hsl(unsigned red, unsigned green, unsigned blue,
     }
 }
 
-static inline void faster_fmod(const double n, const double d, double & q)
-{
-  if (d == 0.0) {
-    q = 0;
-  } else {
-      q = n/d;
-      if (q < 0.0)
-        q -= 1.0;
-      q = n - static_cast<unsigned>(q)*d;
-  }
-}
-
-
 static inline double hueToRGB(double m1, double m2, double h) {
-    faster_fmod(h+1,1,h);
+    // poor mans fmod
+    if(h < 0) h += 1;
+    if(h > 1) h -= 1;
     if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
     if (h * 2 < 1) return m2;
     if (h * 3 < 2) return m1 + (m2 - m1) * (0.66666 - h) * 6;
