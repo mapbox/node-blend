@@ -36,13 +36,13 @@ static inline double hueToRGB(double m1, double m2, double h) {
 static inline void hsl2rgb(double h, double s, double l,
              unsigned & r, unsigned & g, unsigned & b) {
     if (!s) {
-        r = g = b = static_cast<unsigned>(l * 255);
+        r = g = b = static_cast<unsigned>(std::floor((l * 255.0)+.5));
     }
     double m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
-    double m1 = l * 2 - m2;
-    r = static_cast<unsigned>(hueToRGB(m1, m2, h + 0.33333) * 255);
-    g = static_cast<unsigned>(hueToRGB(m1, m2, h) * 255);
-    b = static_cast<unsigned>(hueToRGB(m1, m2, h - 0.33333) * 255);
+    double m1 = l * 2.0 - m2;
+    r = static_cast<unsigned>(std::floor(hueToRGB(m1, m2, h + 0.33333) * 255.0)+.5);
+    g = static_cast<unsigned>(std::floor(hueToRGB(m1, m2, h) * 255.0)+.5);
+    b = static_cast<unsigned>(std::floor(hueToRGB(m1, m2, h - 0.33333) * 255.0)+.5);
 }
 
 
