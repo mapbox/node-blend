@@ -389,9 +389,9 @@ static void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *imag
                 unsigned a = (source_pixel >> 24) & 0xff;
                 if (set_alpha) {
                     double a2 = image->tint.a0 + (a/255.0 * (image->tint.a1 - image->tint.a0));
-                    if (a2 > 1) a2 = 1;
-                    if (a2 < 0) a2 = 0;
-                    a = static_cast<unsigned>(std::floor(a2 * 255.0));
+                    a = static_cast<unsigned>(std::floor((a2 * 255.0)+.5));
+                    if (a > 255) a = 255;
+                    if (a < 0) a = 0;
                 }
                 unsigned r = source_pixel & 0xff;
                 unsigned g = (source_pixel >> 8 ) & 0xff;
