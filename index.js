@@ -110,18 +110,18 @@ module.exports = function(layers, options, callback) {
 };
 
 function tintToString(tint) {
-    var s = 'hsla(';
-    if (tint.h) s += tint.h[0] + 'x' + tint.h[1] + ';'; 
-    else s += '0x1;';
+    var s = 'scale-hsla(';
+    if (tint.h) s += tint.h[0] + ',' + tint.h[1] + ',';
+    else s += '0,1,';
 
-    if (tint.s) s += tint.s[0] + 'x' + tint.s[1] + ';';
-    else s += '0x1;';
+    if (tint.s) s += tint.s[0] + ',' + tint.s[1] + ',';
+    else s += '0,1,';
 
-    if (tint.l) s += tint.l[0] + 'x' + tint.l[1] + ';';
-    else s += '0x1;';
+    if (tint.l) s += tint.l[0] + ',' + tint.l[1] + ',';
+    else s += '0,1,';
 
-    if (tint.a) s += tint.a[0] + 'x' + tint.a[1] + ')';
-    else s += '0x1)';
+    if (tint.a) s += tint.a[0] + ',' + tint.a[1] + ')';
+    else s += '0,1)';
     return s;
 }
 
@@ -176,10 +176,15 @@ function compose(canvas, layers, callback) {
             if (err) return callback(err);
             image.premultiply(function(err, image) {
                 if (err) return callback(err);
-                canvas.composite(image, opts, function(err, canvas) {
-                    if (err) return callback(err);
-                    compose(canvas, layers, callback);
-                });
+                try {
+                    canvas.composite(image, opts, function(err, canvas) {
+                        if (err) return callback(err);
+                        compose(canvas, layers, callback);
+                    });
+                } catch (err) {
+                    console.log(opts);
+                    return callback(err);
+                }
             });
         });
     } else {
@@ -286,9 +291,9 @@ module.exports.parseTintString = function(str) {
         var y0,y1;
         if (l > 0.5) {
             y0 = 0;
-            y1 = l * 2;
+            y1 = Math.min(l * 2,1);
         } else {
-            y0 = l - (1-l);
+            y0 = Math.max(l - (1-l),0);
             y1 = 1;
         }
         options.l = [y0,y1];
