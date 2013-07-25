@@ -40,6 +40,9 @@ exports.imageEqualsFile = function(buffer, file, meanError, callback) {
     compare.stderr.on('data', function(data) {
         error += data.toString();
     });
+    compare.on('error', function(err) {
+        throw err;
+    });
     compare.on('exit', function(code, signal) {
         if (code) {
             return callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
