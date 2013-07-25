@@ -254,9 +254,9 @@ module.exports.parseTintStringOld = function(str) {
         var l = hsl[2];
         if (l > 0.5) {
             options.y0 = 0;
-            options.y1 = l * 2;
+            options.y1 = Math.min(l * 2,1);
         } else {
-            options.y0 = l - (1-l);
+            options.y0 = Math.max(l - (1-l),0);
             options.y1 = 1;
         }
     } else {
