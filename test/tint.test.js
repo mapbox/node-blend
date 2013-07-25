@@ -30,6 +30,9 @@ describe('tinting', function() {
                 tint([{buffer:fs.readFileSync('./test/source/' + name + '.png'),
                        tint:new_o}], options, function(err,data) {
                     var filepath = './test/tinted/' + file;
+                    if (!fs.existsSync(filepath)) {
+                        fs.writeFileSync(filepath,data);
+                    }
                     utilities.imageEqualsFile(data, filepath, done);
                 });
             });
