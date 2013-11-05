@@ -173,7 +173,6 @@ module.exports.upgradeTintString = function(old,round) {
             l += ';' + val + 'x';
         } else {
             // NOTE: old style would default to 1 if y1 was not provided
-            // https://github.com/developmentseed/node-tint/blob/849e3b1fc4f73135094f913d772d12fdb2f79865/lib/tint.js#L88
             l += ';' + val + 'x' + 1;
         }
     }
