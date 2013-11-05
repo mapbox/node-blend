@@ -1,7 +1,7 @@
 {
     "name": "blend",
     "description": "High speed image blending and quantization",
-    "version": "0.8.2",
+    "version": "0.8.3",
     "homepage": "http://github.com/mapbox/node-blend",
     "author": "Konstantin Käfer <kkaefer@gmail.com>",
     "repository": {
