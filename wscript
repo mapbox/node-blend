@@ -220,7 +220,7 @@ def configure(conf):
         _conf_exit(conf, 'png not found: searched %s \nuse --with-png to point to the location of your png libs and headers' % png_search_paths)
 
     if not o.wo_densehash:
-        conf.env.append_value("CXXFLAGS",["-I../deps","-DUSE_DENSE_HASH_MAP"])
+        conf.env.append_value("CXXFLAGS",["-I../deps","-I../src","-DUSE_DENSE_HASH_MAP"])
         conf.env.WO_DENSEHASH = o.wo_densehash
     conf.env.DEBUG = o.debug
 

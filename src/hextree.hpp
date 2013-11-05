@@ -23,6 +23,8 @@
 #ifndef NODE_BLEND_SRC_HEXTREE_HPP
 #define NODE_BLEND_SRC_HEXTREE_HPP
 
+#include "mavericks_clang_shim.hpp"
+
 // mapnik
 #include "palette.hpp"
 
@@ -32,7 +34,6 @@
 #include <set>
 #include <algorithm>
 #include <cmath>
-#include <tr1/unordered_map>
 
 struct RGBAPolicy
 {
