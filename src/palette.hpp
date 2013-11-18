@@ -23,6 +23,8 @@
 #ifndef NODE_BLEND_SRC_PALETTE_H
 #define NODE_BLEND_SRC_PALETTE_H
 
+#include "mavericks_clang_shim.hpp"
+
 // node
 #include <v8.h>
 #include <node.h>
@@ -32,15 +34,13 @@
 #include <vector>
 #include <map>
 #include <iostream>
-#include <tr1/memory>
 
 #ifdef USE_DENSE_HASH_MAP
     #include <sparsehash/dense_hash_map>
     typedef google::dense_hash_map<unsigned int, unsigned char> rgba_hash_table;
 #else
     #warning compiling without dense_hash_map
-    #include <tr1/unordered_map>
-    typedef std::tr1::unordered_map<unsigned int, unsigned char> rgba_hash_table;
+    typedef HASH_NAMESPACE::unordered_map<unsigned int, unsigned char> rgba_hash_table;
 #endif
 
 
@@ -141,7 +141,7 @@ private:
 };
 
 
-typedef std::tr1::shared_ptr<rgba_palette> palette_ptr;
+typedef HASH_NAMESPACE::shared_ptr<rgba_palette> palette_ptr;
 
 class Palette : public node::ObjectWrap {
 public:

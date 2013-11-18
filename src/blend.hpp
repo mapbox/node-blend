@@ -1,13 +1,13 @@
 #ifndef NODE_BLEND_SRC_BLEND_H
 #define NODE_BLEND_SRC_BLEND_H
 
+#include "mavericks_clang_shim.hpp"
 #include <v8.h>
 #include <node.h>
 #include <node_version.h>
 #include <node_buffer.h>
 #include <png.h>
 #include <jpeglib.h>
-
 
 // stl
 #include <iostream>
@@ -17,8 +17,6 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include <tr1/memory>
-
 
 #include "reader.hpp"
 #include "palette.hpp"
@@ -55,7 +53,7 @@ struct Image {
     std::auto_ptr<ImageReader> reader;
 };
 
-typedef std::tr1::shared_ptr<Image> ImagePtr;
+typedef HASH_NAMESPACE::shared_ptr<Image> ImagePtr;
 typedef std::vector<ImagePtr> Images;
 
 enum BlendFormat {

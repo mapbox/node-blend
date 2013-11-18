@@ -1,5 +1,17 @@
 # Changlog
 
+## 0.8.3
+
+ - Support for OS X 10.9
+
+## 0.8.2
+
+ - Maintain build support for all node v0.8.x versions as waf support erodes
+
+## 0.8.1
+
+ - Fix for OS X build and libjpeg turbo
+
 ## 0.8.0
 
  - Add support for webp.
