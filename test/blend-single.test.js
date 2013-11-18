@@ -68,7 +68,7 @@ describe('reencode', function() {
         });
     });
 
-    it('should reencode as WebP 80%', function(done) {
+    it.skip('should reencode as WebP 80%', function(done) {
         blend([ images[0] ], { reencode: true, format: 'webp' }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
@@ -79,7 +79,7 @@ describe('reencode', function() {
         });
     });
 
-    it('should reencode as WebP 40%', function(done) {
+    it.skip('should reencode as WebP 40%', function(done) {
         blend([ images[0] ], { reencode: true, format: 'webp', quality: 40 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
