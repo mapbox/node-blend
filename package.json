@@ -10,7 +10,7 @@
     },
     "contributors"  : ["Dane Springmeyer <dane@mapbox.com>"],
     "engines": {
-        "node": ">= 0.6.13 && < 0.11.0"
+        "node": ">= 0.6.13 < 0.11.0"
     },
     "licenses": [{ "type": "BSD" }],
     "devDependencies": {
