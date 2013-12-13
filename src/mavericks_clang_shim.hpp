@@ -13,7 +13,7 @@
         #define HASH_FUN_H <functional>
         #define HASH_NAMESPACE std
     #endif
-#else // gcc, hope for the best
+#else // gcc
     #include <tr1/unordered_map>
     #include <tr1/memory>
     #define HASH_FUN_H <tr1/functional>
