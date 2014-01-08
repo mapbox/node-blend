@@ -1,5 +1,10 @@
 # Changlog
 
+## 0.9.0
+
+ - Node v0.10.x support (removed waf support)
+ - Minor hsl fixes ported from Mapnik 2.3.x: faster fmod and improved rounding/static casts
+
 ## 0.8.3
 
  - Support for OS X 10.9
