@@ -17,6 +17,6 @@
         "mocha": "*"
     },
     "scripts": {
-        "test": "mocha -R spec"
+        "test": "mocha -R spec --timeout 5000"
     }
 }
