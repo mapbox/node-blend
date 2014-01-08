@@ -40,7 +40,8 @@ exports.imageEqualsFile = function(buffer, file, meanError, callback) {
         error += data.toString();
     });
     compare.on('exit', function(code, signal) {
-        if (code) {
+        // The compare program returns 2 on error otherwise 0 if the images are similar or 1 if they are dissimilar.
+        if (code && code == 2) {
             return callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
         }
         var similarity = parseFloat(error.match(/^\d+(?:\.\d+)?\s+\(([^\)]+)\)\s*$/)[1]);
