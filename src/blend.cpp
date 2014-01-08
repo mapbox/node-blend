@@ -311,7 +311,7 @@ Handle<Value> Blend(const Arguments& args) {
         baton->images.push_back(image);
     }
 
-    QUEUE_WORK(baton.release(), Work_Blend, Work_AfterBlend);
+    QUEUE_WORK(baton.release(), Work_Blend, (uv_after_work_cb)Work_AfterBlend);
 
     return scope.Close(Undefined());
 }
@@ -389,9 +389,9 @@ static void Blend_Composite(unsigned int *target, BlendBaton *baton, Image *imag
                 unsigned a = (source_pixel >> 24) & 0xff;
                 if (set_alpha) {
                     double a2 = image->tint.a0 + (a/255.0 * (image->tint.a1 - image->tint.a0));
-                    if (a2 > 1) a2 = 1;
                     if (a2 < 0) a2 = 0;
-                    a = static_cast<unsigned>(std::floor(a2 * 255.0));
+                    a = static_cast<unsigned>(std::floor((a2 * 255.0)+.5));
+                    if (a > 255) a = 255;
                 }
                 unsigned r = source_pixel & 0xff;
                 unsigned g = (source_pixel >> 8 ) & 0xff;
@@ -617,3 +617,5 @@ extern "C" void init(Handle<Object> target) {
         static_cast<PropertyAttribute>(ReadOnly | DontDelete)
     );
 }
+
+NODE_MODULE(blend, init);

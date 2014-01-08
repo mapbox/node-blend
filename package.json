@@ -10,14 +10,13 @@
     },
     "contributors"  : ["Dane Springmeyer <dane@mapbox.com>"],
     "engines": {
-        "node": ">= 0.4 < 0.9.0"
+        "node": ">= 0.6.13 < 0.11.0"
     },
     "licenses": [{ "type": "BSD" }],
     "devDependencies": {
-        "mocha": "0.11.x"
+        "mocha": "*"
     },
     "scripts": {
-        "test": "mocha -R spec",
-        "install": "node-waf configure build"
+        "test": "mocha -R spec"
     }
 }

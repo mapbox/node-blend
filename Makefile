@@ -1,13 +1,10 @@
 build:
-	node-waf build
+	`npm explore npm -g -- pwd`/bin/node-gyp-bin/node-gyp build
 
 clean:
-	node-waf clean
-	@rm -rf ./lib/blend.node ./build
-	@find ./ -name "*.result.*" -exec rm {} \;
-	@rm .lock-wscript
+	@rm -rf ./lib/*.node ./build
 
 test: build
-	@PATH="./node_modules/mocha/bin:${PATH}" && mocha -R spec
+	@PATH=node_modules/mocha/bin:${PATH} mocha -R spec
 
 .PHONY: build clean test
