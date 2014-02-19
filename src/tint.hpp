@@ -15,7 +15,7 @@ static void rgb2hsl(unsigned red, unsigned green, unsigned blue,
     double gamma = max + min;
     h = 0.0, s = 0.0, l = gamma / 2.0;
     if (delta > 0.0) {
-        s = l > 0.5 ? delta / (2.0 - gamma) : delta / gamma;
+        s = l > 0.5 ? delta / (2.0 - delta) : delta / gamma;
         if (max == r && max != g) h = (g - b) / delta + (g < b ? 6.0 : 0.0);
         if (max == g && max != b) h = (b - r) / delta + 2.0;
         if (max == b && max != r) h = (r - g) / delta + 4.0;

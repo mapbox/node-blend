@@ -48,7 +48,7 @@ var rgb2hsl = function(r, g, b){
     var h = 0, s = 0, l = gamma / 2;
 
     if (delta) {
-        s = l > 0.5 ? delta / (2 - gamma) : delta / gamma;
+        s = l > 0.5 ? delta / (2 - delta) : delta / gamma;
         if (max == r && max != g) h = (g - b) / delta + (g < b ? 6 : 0);
         if (max == g && max != b) h = (b - r) / delta + 2;
         if (max == b && max != r) h = (r - g) / delta + 4;
