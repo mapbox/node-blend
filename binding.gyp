@@ -26,14 +26,13 @@
       'cflags_cc!': ['-fno-rtti', '-fno-exceptions'],
       'cflags_cc' : [
           '<!@(pkg-config libpng --cflags)',
-          '<!@(pkg-config libwebp --cflags)',
           '-funroll-loops',
           '-fomit-frame-pointer'
           
       ],
       'libraries':[
         '<!@(pkg-config libpng --libs)',
-        '<!@(pkg-config libwebp --libs)',
+        '-lwebp'
         '-ljpeg',
       ]
   },
