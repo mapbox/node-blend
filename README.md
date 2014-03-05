@@ -45,8 +45,8 @@ Mac OS X ships with png at /usr/X11, which will also be searched.
 
 If you have jpeg or png installed in a custom location you can do:
 
-    export CXXFLAGS="-I/usr/local/opt/jpeg-turbo/include"
-    export LDFLAGS="-L/usr/local/opt/jpeg-turbo/lib"
+    export CXXFLAGS="-I`brew --prefix`/include"
+    export LDFLAGS="-L`brew --prefix`/lib"
     ./configure
 
 
