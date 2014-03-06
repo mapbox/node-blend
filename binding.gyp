@@ -32,7 +32,7 @@
       ],
       'libraries':[
         '<!@(pkg-config libpng --libs)',
-        '-lwebp'
+        '-lwebp',
         '-ljpeg',
       ]
   },
