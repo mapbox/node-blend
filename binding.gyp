@@ -49,8 +49,7 @@
       ],
       'xcode_settings': {
         'OTHER_CPLUSPLUSFLAGS':[
-           '<!@(pkg-config libpng --cflags)',
-           '<!@(pkg-config libwebp --cflags)'
+           '<!@(pkg-config libpng --cflags)'
         ],
         'GCC_ENABLE_CPP_RTTI': 'YES',
         'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'
