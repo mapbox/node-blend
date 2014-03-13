@@ -1,6 +1,6 @@
 # node-blend
 
-This module alpha-composites images of the same size and returns the compressed image.
+This module can rencode one or more images of the same size. It supports alpha-compositing, color quantization, and various compression options to produce highly optimized output.
 
 # Usage
 
