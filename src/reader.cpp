@@ -219,7 +219,9 @@ bool WebPImageReader::decode() {
 }
 
 ImageReader* ImageReader::create(unsigned char* src, size_t len) {
-    if (png_sig_cmp((png_bytep)src, 0, 8) == 0) {
+    if (len == 0) {
+        return new ImageReader("Invalid zero-length image");
+    } else if (png_sig_cmp((png_bytep)src, 0, 8) == 0) {
         return new PNGImageReader(src, len);
     } else if (len >= 2 && src[0] == 255 && src[1] == 216) {
         return new JPEGImageReader(src, len);
