@@ -8,11 +8,13 @@ describe('blend', function() {
     it('should error (a + c)', function(done) {
         blend([a, c], function(err, data) {
             assert.ok(err);
+            done();
         });
     });
     it('should error (a + b)', function(done) {
         blend([a, b], function(err, data) {
             assert.ok(err);
+            done();
         });
     });
 });
