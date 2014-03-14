@@ -1,5 +1,9 @@
 # Changlog
 
+## 0.9.1
+
+ - Fixed potential crash on zero length image.
+
 ## 0.9.0
 
  - Node v0.10.x support (removed waf support)
