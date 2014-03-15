@@ -5,6 +5,18 @@ var blend = require('../index.js');
 var assert = require('assert');
 
 describe('blend', function() {
+    it('should error (a + a)', function(done) {
+        blend([a, a], function(err, data) {
+            assert.ok(err);
+            done();
+        });
+    });
+    it('should error (b + b)', function(done) {
+        blend([b, b], function(err, data) {
+            assert.ok(err);
+            done();
+        });
+    });
     it('should error (a + c)', function(done) {
         blend([a, c], function(err, data) {
             assert.ok(err);
