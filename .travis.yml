@@ -15,5 +15,9 @@ before_install:
 - node --version
 - npm --version
 - ./test/travis-deps.sh
+install:
+- npm install
+script:
+- npm test
 after_success:
 - ./test/travis-publish.sh
