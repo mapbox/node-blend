@@ -1,6 +1,8 @@
 #!/bin/bash
 
 set -e
+set -o pipefail
+
 export CXXFLAGS="$CXXFLAGS -fPIC"
 export CFLAGS="$CFLAGS -fPIC"
 
@@ -17,10 +19,16 @@ cd /tmp/libpng-1.2.51
 make
 sudo make install
 
+# md5sum for libjpeg-turbo from sourceforge UI
 wget 'http://prdownloads.sourceforge.net/libjpeg-turbo/libjpeg-turbo-1.3.1.tar.gz?download' -O /tmp/libjpeg-turbo-1.3.1.tar.gz
+md5sum /tmp/libjpeg-turbo-1.3.1.tar.gz | grep 2c3a68129dac443a72815ff5bb374b05
 tar xzf /tmp/libjpeg-turbo-1.3.1.tar.gz -C /tmp/
 cd /tmp/libjpeg-turbo-1.3.1
-./configure --enable-shared --disable-shared --disable-dependency-tracking
+if [ "$platform" == "linux" ]; then
+    ./configure --enable-shared --disable-shared --disable-dependency-tracking
+else
+    ./configure --enable-shared --disable-shared --disable-dependency-tracking --host x86_64-apple-darwin
+fi
 make
 sudo make install
 
