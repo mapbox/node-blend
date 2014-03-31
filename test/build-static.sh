@@ -9,7 +9,7 @@ build_dir=$(pwd)
 wget 'http://prdownloads.sourceforge.net/libpng/libpng-1.2.51.tar.gz?download' -O /tmp/libpng-1.2.51.tar.gz
 wget 'http://prdownloads.sourceforge.net/libpng/libpng-1.2.51.tar.gz.asc?download' -O /tmp/libpng-1.2.51.tar.gz.asc
 gpg --keyserver pgp.mit.edu --recv-keys A16C640F
-gpg --verify /tmp/libpng-1.2.51.tar.gz.asc
+gpg --verify /tmp/libpng-1.2.51.tar.gz.asc /tmp/libpng-1.2.51.tar.gz
 
 tar xzf /tmp/libpng-1.2.51.tar.gz -C /tmp/
 cd /tmp/libpng-1.2.51
