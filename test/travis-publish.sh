@@ -2,17 +2,17 @@
 
 set -e
 
+# Inspect binary.
+if [ $platform == "linux" ]; then
+    ldd ./lib/blend.node
+else
+    otool -L ./lib/blend.node
+fi
+
 COMMIT_MESSAGE=$(git show -s --format=%B $TRAVIS_COMMIT | tr -d '\n')
 
 if test "${COMMIT_MESSAGE#*'[publish binary]'}" != "$COMMIT_MESSAGE"
     then
-
-    # Inspect binary.
-    if [ $platform == "linux" ]; then
-        ldd ./lib/blend.node
-    else
-        otool -L ./lib/blend.node
-    fi
 
     exit 0
 
