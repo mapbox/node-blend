@@ -4,5 +4,5 @@ node_js:
   - "0.8"
 
 before_install:
-  - sudo apt-get update
-  - sudo apt-get install libjpeg8 libjpeg8-dev libpng-dev libwebp-dev
+  - ./test/build-static.sh
+
