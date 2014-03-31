@@ -8,11 +8,9 @@ export CFLAGS="$CFLAGS -fPIC"
 
 build_dir=$(pwd)
 
+# md5sum for libpng from sourceforge UI
 wget 'http://prdownloads.sourceforge.net/libpng/libpng-1.2.51.tar.gz?download' -O /tmp/libpng-1.2.51.tar.gz
-wget 'http://prdownloads.sourceforge.net/libpng/libpng-1.2.51.tar.gz.asc?download' -O /tmp/libpng-1.2.51.tar.gz.asc
-gpg --keyserver pgp.mit.edu --recv-keys A16C640F
-gpg --verify /tmp/libpng-1.2.51.tar.gz.asc /tmp/libpng-1.2.51.tar.gz
-
+md5sum /tmp/libpng-1.2.51.tar.gz | grep e358f9a265f2063b36f10dc454ee0e17
 tar xzf /tmp/libpng-1.2.51.tar.gz -C /tmp/
 cd /tmp/libpng-1.2.51
 ./configure --enable-shared --disable-shared --disable-dependency-tracking
