@@ -1,9 +1,19 @@
-language: node_js
-node_js:
-  - "0.10"
-  - "0.8"
-
+language: cpp
+compiler:
+- gcc
+env:
+  matrix:
+  - NODE_NVM_VERSION="0.10"
+  - NODE_NVM_VERSION="0.8"
 before_install:
-  - sudo apt-get install -y nasm
-  - ./test/build-static.sh
-
+- export platform=$(uname -s | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/")
+- if [[ "$platform" == "linux" ]]; then sudo apt-get install -y nasm; fi
+- git clone https://github.com/creationix/nvm.git ../.nvm
+- source ../.nvm/nvm.sh
+- nvm install $NODE_NVM_VERSION
+- nvm use $NODE_NVM_VERSION
+- node --version
+- npm --version
+- ./test/travis-deps.sh
+after_success:
+- ./test/travis-publish.sh
