@@ -42,11 +42,15 @@ cd /tmp/libwebp-0.4.0
 make
 sudo make install
 
-wget 'http://www.imagemagick.org/download/ImageMagick-6.8.8-10.tar.gz' -O /tmp/ImageMagick-6.8.8-10.tar.gz
-tar xzf /tmp/ImageMagick-6.8.8-10.tar.gz -C /tmp/
-cd /tmp/ImageMagick-6.8.8-10
-./configure
-make
-sudo make install
+# ImageMagick is built from scratch on osx as brew installs libjpeg which
+# conflicts with libjpeg-turbo.
+if [ "$platform" == "darwin" ]; then
+    wget 'http://www.imagemagick.org/download/ImageMagick-6.8.8-10.tar.gz' -O /tmp/ImageMagick-6.8.8-10.tar.gz
+    tar xzf /tmp/ImageMagick-6.8.8-10.tar.gz -C /tmp/
+    cd /tmp/ImageMagick-6.8.8-10
+    ./configure
+    make
+    sudo make install
+fi
 
 cd $build_dir
