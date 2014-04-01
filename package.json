@@ -19,6 +19,7 @@
     "devDependencies": {
         "mocha": "*"
     },
+    "main": "index.js",
     "binary": {
         "module_name" : "blend",
         "module_path" : "./lib/",
