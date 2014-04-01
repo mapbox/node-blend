@@ -33,7 +33,7 @@ else
     ./configure --enable-shared --disable-shared --disable-dependency-tracking --host x86_64-apple-darwin
 fi
 make
-sudo make install
+sudo make install prefix=/usr/local libdir=/usr/local/lib
 
 wget 'https://webp.googlecode.com/files/libwebp-0.4.0.tar.gz' -O /tmp/libwebp-0.4.0.tar.gz
 tar xzf /tmp/libwebp-0.4.0.tar.gz -C /tmp/
