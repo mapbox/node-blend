@@ -30,7 +30,7 @@ cd /tmp/libjpeg-turbo-1.3.1
 if [ "$platform" == "linux" ]; then
     ./configure --enable-shared --disable-shared --disable-dependency-tracking
 else
-    ./configure --enable-shared --disable-shared --disable-dependency-tracking --host x86_64-apple-darwin
+    ./configure --enable-shared --disable-shared --disable-dependency-tracking --with-jpeg8 --host x86_64-apple-darwin
 fi
 make
 sudo make install prefix=/usr/local libdir=/usr/local/lib
