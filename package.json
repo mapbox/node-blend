@@ -19,6 +19,7 @@
     "devDependencies": {
         "mocha": "*"
     },
+    "main": "index.js",
     "binary": {
         "module_name" : "blend",
         "module_path" : "./lib/",
@@ -27,6 +28,7 @@
         "package_name": "{node_abi}-{platform}-{arch}.tar.gz"
     },
     "scripts": {
+        "install": "node-pre-gyp install --fallback-to-build",
         "test": "mocha -R spec --timeout 5000"
     }
 }
