@@ -34,6 +34,7 @@
         '<!@(pkg-config libpng --libs)',
         '-lwebp',
         '-ljpeg',
+        '-lz'
       ]
   },
   'targets': [

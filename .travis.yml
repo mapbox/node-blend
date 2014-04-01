@@ -1,8 +1,27 @@
-language: node_js
-node_js:
-  - "0.10"
-  - "0.8"
-
+language: cpp
+compiler:
+- gcc
+env:
+  matrix:
+  - NODE_NVM_VERSION="0.10"
+  - NODE_NVM_VERSION="0.8"
+  global:
+  - node_pre_gyp_accessKeyId: AKIAJ6N5IOLDDIFUBK2Q
+  - secure: "WRPPfhlH2g83m4w6jTqgzkh/QI43wiWWe88jtIJsw1xnouKXRKO0u7Qz2o6t1mHw6d+8q6YFyOLrN/XQZslXkOrreUtOy4PoTK6U+wWQJk/tNn2gL34wBY+npX8GIjXUJH6icj7DXxi7mQoPCfYfRsLygZ2x4EbqBA29nlU1DmU="
 before_install:
-  - sudo apt-get update
-  - sudo apt-get install libjpeg8 libjpeg8-dev libpng-dev libwebp-dev
+- export platform=$(uname -s | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/")
+- if [[ "$platform" == "linux" ]]; then sudo apt-get install -y nasm; fi
+- if [[ "$platform" == "darwin" ]]; then brew install nasm; fi
+- git clone https://github.com/creationix/nvm.git ../.nvm
+- source ../.nvm/nvm.sh
+- nvm install $NODE_NVM_VERSION
+- nvm use $NODE_NVM_VERSION
+- node --version
+- npm --version
+- ./test/travis-deps.sh
+install:
+- npm install
+script:
+- npm test
+after_success:
+- ./test/travis-publish.sh
