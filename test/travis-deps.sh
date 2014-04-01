@@ -28,7 +28,7 @@ $getmd5 /tmp/libjpeg-turbo-1.3.1.tar.gz | grep 2c3a68129dac443a72815ff5bb374b05
 tar xzf /tmp/libjpeg-turbo-1.3.1.tar.gz -C /tmp/
 cd /tmp/libjpeg-turbo-1.3.1
 if [ "$platform" == "linux" ]; then
-    ./configure --enable-shared --disable-shared --disable-dependency-tracking
+    ./configure --enable-shared --disable-shared --disable-dependency-tracking --with-jpeg8
 else
     ./configure --enable-shared --disable-shared --disable-dependency-tracking --with-jpeg8 --host x86_64-apple-darwin
 fi
