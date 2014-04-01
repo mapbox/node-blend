@@ -1,5 +1,9 @@
 # Changlog
 
+## 0.10.0
+
+ - Support for pre-built binaries using node-pre-gyp.
+
 ## 0.9.1
 
  - Fixed potential crash on zero length image.
