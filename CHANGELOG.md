@@ -1,5 +1,9 @@
 # Changlog
 
+## 0.10.1
+
+ - Bump release to dodge npm fail.
+
 ## 0.10.0
 
  - Support for pre-built binaries using node-pre-gyp.
