@@ -6,8 +6,8 @@ env:
   - NODE_NVM_VERSION="0.10"
   - NODE_NVM_VERSION="0.8"
   global:
-  - node_pre_gyp_accessKeyId: AKIAJ6N5IOLDDIFUBK2Q
-  - secure: "WRPPfhlH2g83m4w6jTqgzkh/QI43wiWWe88jtIJsw1xnouKXRKO0u7Qz2o6t1mHw6d+8q6YFyOLrN/XQZslXkOrreUtOy4PoTK6U+wWQJk/tNn2gL34wBY+npX8GIjXUJH6icj7DXxi7mQoPCfYfRsLygZ2x4EbqBA29nlU1DmU="
+  - secure: oaf6xZKFVHITsoPUfJv33babAxRWlVz9tDnNMhxvgTsykZX6CsdjmuYWqb5secWA9aDl0R4mJw87QWfV51wldSNHvNdPvQgZDoHDPjPqmkVB8Yp2PwsplIxVql4XrmA/mSGq0NX7o5Ot+XidnWtBUgo1ePvJbSdzH060DEbEi7A=
+  - secure: Eo283m2YOIYtUTwkF1U3Hxmqp3NPipu1aHbtPuX5tOQTCnO249B416oCgRyMg+Be7xIrz/yk1r7LhqgMIRWqBTzC3eapWJ+VkTD3bGv+K98XQapMrmD8g6FofVfjr7qFF2c69JN2gXm2B0MiPU2Fqofo9vaeo54gXi0ybylbkUs=
 before_install:
 - export platform=$(uname -s | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/")
 - if [[ "$platform" == "linux" ]]; then sudo apt-get install -y nasm; fi
