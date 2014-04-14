@@ -1,6 +1,6 @@
 # node-blend
 
-This module can rencode one or more images of the same size. It supports alpha-compositing, color quantization, and various compression options to produce highly optimized output.
+This module can rencode one or more images of the same size. It supports stiching multiple images together into a single image, alpha-compositing, color quantization, and various compression options to produce highly optimized output.
 
 # Usage
 
