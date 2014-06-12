@@ -1,12 +1,10 @@
-var blend = require('./lib/blend');
-module.exports = require('mapnik').blend;
-module.exports.Palette = blend.Palette;
-module.exports.libpng = blend.libpng;
-module.exports.libjpeg = blend.libjpeg;
-module.exports.rgb2hsl2 = blend.rgb2hsl2;
-module.exports.hsl2rgb2 = blend.hsl2rgb2;
+var mapnik = require('mapnik');
+module.exports = mapnik.blend;
+module.exports.Palette = mapnik.Palette;
+module.exports.rgb2hsl2 = mapnik.rgb2hsl2;
+module.exports.hsl2rgb2 = mapnik.hsl2rgb2;
 
-var Palette = blend.Palette;
+var Palette = module.exports.Palette;
 Palette.prototype.clone = function() {
     return new this.constructor(this.toBuffer());
 };
