@@ -1,27 +1,4 @@
-language: cpp
-compiler:
-- gcc
-env:
-  matrix:
-  - NODE_NVM_VERSION="0.10"
-  - NODE_NVM_VERSION="0.8"
-  global:
-  - secure: oaf6xZKFVHITsoPUfJv33babAxRWlVz9tDnNMhxvgTsykZX6CsdjmuYWqb5secWA9aDl0R4mJw87QWfV51wldSNHvNdPvQgZDoHDPjPqmkVB8Yp2PwsplIxVql4XrmA/mSGq0NX7o5Ot+XidnWtBUgo1ePvJbSdzH060DEbEi7A=
-  - secure: Eo283m2YOIYtUTwkF1U3Hxmqp3NPipu1aHbtPuX5tOQTCnO249B416oCgRyMg+Be7xIrz/yk1r7LhqgMIRWqBTzC3eapWJ+VkTD3bGv+K98XQapMrmD8g6FofVfjr7qFF2c69JN2gXm2B0MiPU2Fqofo9vaeo54gXi0ybylbkUs=
-before_install:
-- export platform=$(uname -s | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/")
-- if [[ "$platform" == "linux" ]]; then sudo apt-get install -y nasm; fi
-- if [[ "$platform" == "darwin" ]]; then brew install nasm; fi
-- git clone https://github.com/creationix/nvm.git ../.nvm
-- source ../.nvm/nvm.sh
-- nvm install $NODE_NVM_VERSION
-- nvm use $NODE_NVM_VERSION
-- node --version
-- npm --version
-- ./test/travis-deps.sh
-install:
-- npm install
-script:
-- npm test
-after_success:
-- ./test/travis-publish.sh
+language: node_js
+
+node_js:
+  - "0.10"

@@ -13,6 +13,9 @@
     "devDependencies": {
         "mocha": "*"
     },
+    "dependencies" : {
+        "mapnik": "https://github.com/mapnik/node-mapnik/tarball/blend"
+    },
     "main": "index.js",
     "scripts": {
         "test": "mocha -R spec --timeout 5000"
