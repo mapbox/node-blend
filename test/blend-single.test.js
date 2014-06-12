@@ -68,18 +68,17 @@ describe('reencode', function() {
         });
     });
 
-    it.skip('should reencode as WebP 80%', function(done) {
+    it('should reencode as WebP 80%', function(done) {
         blend([ images[0] ], { reencode: true, format: 'webp' }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            console.log(data.length)
             assert.ok(data.length < 8000);
             assert.ok(data.length > 3965);
             utilities.imageEqualsFile(data, 'test/fixture/results/30.webp', 260, done);
         });
     });
 
-    it.skip('should reencode as WebP 40%', function(done) {
+    it('should reencode as WebP 40%', function(done) {
         blend([ images[0] ], { reencode: true, format: 'webp', quality: 40 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
