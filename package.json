@@ -11,10 +11,10 @@
     "contributors"  : ["Dane Springmeyer <dane@mapbox.com>"],
     "licenses": [{ "type": "BSD" }],
     "devDependencies": {
-        "mocha": "*"
+        "mocha": "1.x"
     },
     "dependencies" : {
-        "mapnik": "https://github.com/mapnik/node-mapnik/tarball/blend"
+        "mapnik": "~1.4.9"
     },
     "main": "index.js",
     "scripts": {
