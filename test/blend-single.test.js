@@ -68,24 +68,33 @@ describe('reencode', function() {
         });
     });
 
-    it.skip('should reencode as WebP 80%', function(done) {
+    it('should reencode as WebP 80%', function(done) {
         blend([ images[0] ], { reencode: true, format: 'webp' }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            console.log(data.length)
             assert.ok(data.length < 8000);
             assert.ok(data.length > 3965);
-            utilities.imageEqualsFile(data, 'test/fixture/results/30.webp', 260, done);
+            if (process.platform == "linux") {
+                //skip comparison since graphicsmagic on linux will lack webp support
+                done();
+            } else {
+                utilities.imageEqualsFile(data, 'test/fixture/results/30.webp', 260, done);
+            }
         });
     });
 
-    it.skip('should reencode as WebP 40%', function(done) {
+    it('should reencode as WebP 40%', function(done) {
         blend([ images[0] ], { reencode: true, format: 'webp', quality: 40 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
             assert.ok(data.length < 4000);
             assert.ok(data.length > 2000);
-            utilities.imageEqualsFile(data, 'test/fixture/results/31.webp', 426, done);
+            if (process.platform == "linux") {
+                //skip comparison since graphicsmagic on linux will lack webp support
+                done();
+            } else {
+                utilities.imageEqualsFile(data, 'test/fixture/results/31.webp', 426, done);
+            }
         });
     });
 

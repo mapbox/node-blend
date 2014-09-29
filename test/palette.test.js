@@ -24,7 +24,7 @@ describe('palette creation', function() {
     it('should throw for an invalid palette length', function() {
         assert['throws'](function() {
             new blend.Palette('\x01\x02\x03');
-        }, (/Invalid palette length/));
+        }, (/invalid palette length/));
     });
 
     it('should create an rgb palette', function() {

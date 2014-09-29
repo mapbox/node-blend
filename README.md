@@ -35,20 +35,7 @@ blend([ image1, image2 ], {
 
 # Installation
 
-To compile, this module requires `libjpeg`, `libpng`, and `libwebp`.
-
-Both /usr and /usr/local with be searched for these dependencies by default.
-
-On Ubuntu, type `sudo apt-get install libjpeg8-dev libpng12-dev libwebp-dev` to install them.
-
-Mac OS X ships with png at /usr/X11, which will also be searched.
-
-If you have jpeg or png installed in a custom location you can do:
-
-    export CXXFLAGS="-I`brew --prefix`/include"
-    export LDFLAGS="-L`brew --prefix`/lib"
-    ./configure
-
+    npm install blend@latest
 
 # Development
 
