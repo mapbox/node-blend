@@ -1,5 +1,9 @@
 # Changlog
 
+## 0.11.0
+
+ - Drop C++ addon in favor of using upstream node-mapnik blend API.
+
 ## 0.10.1
 
  - Bump release to dodge npm fail.
