@@ -1,5 +1,9 @@
 # Changlog
 
+## 1.0.0
+
+ - Update to node-mapnik@3.0.0. Requires C++11 support.
+
 ## 0.11.0
 
  - Drop C++ addon in favor of using upstream node-mapnik blend API.
