@@ -14,7 +14,7 @@
         "mocha": "1.x"
     },
     "dependencies" : {
-        "mapnik": "~1.4.10"
+        "mapnik": "~3.0.0"
     },
     "main": "index.js",
     "scripts": {

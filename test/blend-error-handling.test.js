@@ -139,7 +139,7 @@ describe('invalid images', function() {
         buffer.fill(0);
         blend([ buffer, buffer ], function(err, data) {
             if (!err) return done(new Error('Error expected'));
-            assert.equal(err.message, "Unknown image format");
+            assert.equal(err.message, "image_reader: can't determine type from input data");
             done();
         });
     });
