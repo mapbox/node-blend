@@ -14,7 +14,7 @@
         "mocha": "1.x"
     },
     "dependencies" : {
-        "mapnik": "https://github.com/mapnik/node-mapnik/archive/master.tar.gz"
+        "mapnik": "~3.0.0"
     },
     "main": "index.js",
     "scripts": {
