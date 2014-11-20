@@ -1,5 +1,9 @@
 # Changlog
 
+## 1.0.1
+
+ - Loosen mapnik semver to 3.x.
+
 ## 1.0.0
 
  - Update to node-mapnik@3.0.0. Requires C++11 support.
