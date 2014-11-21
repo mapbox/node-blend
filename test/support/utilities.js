@@ -8,7 +8,7 @@ var existsSync = require('fs').existsSync || require('path').existsSync
 var image_magick_available = true;
 var overwrite = false;
 
-exec('compare -h', function(error, stdout, stderr) {
+exec('compare -version', function(error, stdout, stderr) {
     if (error !== null) {
       image_magick_available = false;
     }
