@@ -20,24 +20,27 @@ function imageEqualsFile(buffer, file, meanError, callback) {
         meanError = 0.05;
     }
 
-    var fixturesize = fs.statSync(file).size;
-    var sizediff = Math.abs(fixturesize - buffer.length) / fixturesize;
-
     var prefix = String(count++)+"-";
-    var actualTmp = path.join("/tmp/node-blend",prefix+path.basename(file.replace(path.extname(file),'.actual'+path.extname(file))));
-    var resultFile = path.join("/tmp/node-blend",prefix+path.basename(file.replace(path.extname(file),'.result'+path.extname(file))));
+    var ext = path.extname(file);
+    var expected_copy = path.join("/tmp/node-blend",prefix+path.basename(file.replace(ext,'.expected'+ext)));
+    var resultFile = path.join("/tmp/node-blend",prefix+path.basename(file.replace(ext,'.result'+ext)));
 
     mkdirp.sync(path.dirname(resultFile));
-    mkdirp.sync(path.dirname(actualTmp));
+    mkdirp.sync(path.dirname(expected_copy));
+
+    if (process.env.UPDATE) {
+        fs.writeFileSync(file,buffer);
+    }
+
     var resultImage = new mapnik.Image.fromBytesSync(buffer);
     var expectImage = new mapnik.Image.open(file);
 
+    var fixturesize = fs.statSync(file).size;
+    var sizediff = Math.abs(fixturesize - buffer.length) / fixturesize;
+
     if (sizediff > meanError) {
-        resultImage.save(resultFile.replace('jpg','jpeg'));
-        if (process.env.UPDATE) {
-            resultImage.save(file.replace('jpg','jpeg'));
-        }
-        expectImage.save(actualTmp.replace('jpg','jpeg'));
+        fs.writeFileSync(resultFile,buffer);
+        fs.writeFileSync(expected_copy, fs.readFileSync(file));
         return callback(new Error('Image size is too different from fixture: ' + buffer.length + ' vs. ' + fixturesize + '\n\tSee result at ' + resultFile));
     }
     var pxDiff = expectImage.compare(resultImage);
@@ -46,11 +49,8 @@ function imageEqualsFile(buffer, file, meanError, callback) {
     var pxThresh = resultImage.width() * resultImage.height() * 0.02;
 
     if (pxDiff > pxThresh) {
-        resultImage.save(resultFile.replace('jpg','jpeg'));
-        if (process.env.UPDATE) {
-            resultImage.save(file.replace('jpg','jpeg'));
-        }
-        expectImage.save(actualTmp.replace('jpg','jpeg'));
+        fs.writeFileSync(resultFile,buffer);
+        fs.writeFileSync(expected_copy, fs.readFileSync(file))
         callback(new Error('Image is too different from fixture: ' + pxDiff + ' pixels > ' + pxThresh + ' pixels\n\tSee result at ' + resultFile));
     } else {
         callback();
