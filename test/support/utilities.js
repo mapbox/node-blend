@@ -3,59 +3,58 @@ var util = require('util');
 var path = require('path');
 var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
-var existsSync = require('fs').existsSync || require('path').existsSync
+var existsSync = require('fs').existsSync || require('path').existsSync;
+var mapnik = require('mapnik');
+var mkdirp = require('mkdirp');
+var rimraf = require('rimraf')
 
-var image_magick_available = true;
-var overwrite = false;
+//try {
+    rimraf.sync("/tmp/node-blend");
+//} catch (err) {}
 
-exec('compare -version', function(error, stdout, stderr) {
-    if (error !== null) {
-      image_magick_available = false;
-    }
-});
+var count = 0;
 
-exports.imageEqualsFile = function(buffer, file, meanError, callback) {
+function imageEqualsFile(buffer, file, meanError, callback) {
     if (typeof meanError == 'function') {
         callback = meanError;
-        meanError = 0.001;
+        meanError = 0.05;
     }
 
-    file = path.resolve(file);
-    if (overwrite) {
-        var err = fs.writeFileSync(file, buffer);
-        if (err) {
-            err.similarity = 0;
+    var fixturesize = fs.statSync(file).size;
+    var sizediff = Math.abs(fixturesize - buffer.length) / fixturesize;
+
+    var prefix = String(count++)+"-";
+    var actualTmp = path.join("/tmp/node-blend",prefix+path.basename(file.replace(path.extname(file),'.actual'+path.extname(file))));
+    var resultFile = path.join("/tmp/node-blend",prefix+path.basename(file.replace(path.extname(file),'.result'+path.extname(file))));
+
+    mkdirp.sync(path.dirname(resultFile));
+    mkdirp.sync(path.dirname(actualTmp));
+    var resultImage = new mapnik.Image.fromBytesSync(buffer);
+    var expectImage = new mapnik.Image.open(file);
+
+    if (sizediff > meanError) {
+        resultImage.save(resultFile.replace('jpg','jpeg'));
+        if (process.env.UPDATE) {
+            resultImage.save(file.replace('jpg','jpeg'));
         }
-        return callback(err);
+        expectImage.save(actualTmp.replace('jpg','jpeg'));
+        return callback(new Error('Image size is too different from fixture: ' + buffer.length + ' vs. ' + fixturesize + '\n\tSee result at ' + resultFile));
     }
-    if (!image_magick_available) {
-        throw new Error("imagemagick 'compare' tool is not available, please install before running tests");
+    var pxDiff = expectImage.compare(resultImage);
+
+    // Allow < 2% of pixels to vary by > default comparison threshold of 16.
+    var pxThresh = resultImage.width() * resultImage.height() * 0.02;
+
+    if (pxDiff > pxThresh) {
+        resultImage.save(resultFile.replace('jpg','jpeg'));
+        if (process.env.UPDATE) {
+            resultImage.save(file.replace('jpg','jpeg'));
+        }
+        expectImage.save(actualTmp.replace('jpg','jpeg'));
+        callback(new Error('Image is too different from fixture: ' + pxDiff + ' pixels > ' + pxThresh + ' pixels\n\tSee result at ' + resultFile));
+    } else {
+        callback();
     }
-    var type = path.extname(file);
-    var result = path.join(path.dirname(file), path.basename(file, type) + '.result' + type);
-    fs.writeFileSync(result, buffer);
-    var compare = spawn('compare', ['-metric', 'MAE', result, file, '/dev/null' ]);
-    var error = '';
-    compare.stderr.on('data', function(data) {
-        error += data.toString();
-    });
-    compare.on('exit', function(code, signal) {
-        // The compare program returns 2 on error otherwise 0 if the images are similar or 1 if they are dissimilar.
-        if (code && code == 2) {
-            return callback(new Error((error || 'Exited with code ' + code) + ': ' + result));
-        }
-        var similarity = parseFloat(error.match(/^\d+(?:\.\d+)?\s+\(([^\)]+)\)\s*$/)[1]);
-        if (similarity > meanError) {
-            var err = new Error('Images not equal: ' + error.trim() + ':\n' + result + '\n'+file);
-            err.similarity = similarity;
-            callback(err);
-        } else {
-            if (existsSync(result)) {
-                // clean up old failures
-                fs.unlinkSync(result);
-            }
-            callback(null);
-        }
-    });
-    compare.stdin.end();
-};
+}
+
+module.exports.imageEqualsFile = imageEqualsFile;
