@@ -28,7 +28,7 @@ function imageEqualsFile(buffer, file, meanError, callback) {
     mkdirp.sync(path.dirname(resultFile));
     mkdirp.sync(path.dirname(expected_copy));
 
-    if (process.env.UPDATE) {
+    if (!existsSync(file) || process.env.UPDATE) {
         fs.writeFileSync(file,buffer);
     }
 
