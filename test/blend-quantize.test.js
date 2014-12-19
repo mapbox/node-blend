@@ -19,7 +19,7 @@ describe('quantization', function() {
         blend(images, { format: 'png', quality: 128 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.01, done);
+            utilities.imageEqualsFile(data, 'test/fixture/quant/1.png', 0.01, done);
         });
     });
 
@@ -27,7 +27,7 @@ describe('quantization', function() {
         blend(images, { format: 'png', quality: 64 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.02, done);
+            utilities.imageEqualsFile(data, 'test/fixture/quant/2.png', 0.02, done);
         });
     });
 
@@ -35,7 +35,7 @@ describe('quantization', function() {
         blend(images, { format: 'png', quality: 16 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.05, done);
+            utilities.imageEqualsFile(data, 'test/fixture/quant/3.png', 0.05, done);
         });
     });
 
@@ -43,7 +43,7 @@ describe('quantization', function() {
         blend(images, { format: 'png', quality: 16 }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/1.png', 0.05, done);
+            utilities.imageEqualsFile(data, 'test/fixture/quant/4.png', 0.05, done);
         });
     });
 });

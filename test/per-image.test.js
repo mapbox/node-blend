@@ -104,7 +104,7 @@ describe('per-image settings', function() {
         }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/25.png', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/25b.png', done);
         });
     });
 
@@ -118,9 +118,9 @@ describe('per-image settings', function() {
         }, function(err, data, warnings) {
             if (err) return done(err);
             assert.deepEqual(warnings, []);
-            utilities.imageEqualsFile(data, 'test/fixture/results/25.png', done);
+            utilities.imageEqualsFile(data, 'test/fixture/results/25c.png', done);
             assert.ok(data.length <= 300);
-            assert.ok(data.length <= fs.readFileSync('test/fixture/results/25.png').length);
+            assert.ok(data.length <= fs.readFileSync('test/fixture/results/25c.png').length);
         });
     });
 
