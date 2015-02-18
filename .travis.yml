@@ -4,7 +4,7 @@ node_js:
   - "0.10"
   - "0.12"
 
-sudo:false
+sudo: false
 
 before_install:
 # install c++11 capable libstdc++ without sudo
