@@ -16,26 +16,23 @@ var images = [
 
 describe('PNG blending', function() {
     it('should return the last image if it does not have alpha', function(done) {
-        blend([ images[1], images[0] ], function(err, data, warnings) {
+        blend([ images[1], images[0] ], function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             assert.deepEqual(images[0], data);
             done();
         });
     });
 
     it('should return the correctly blended file for five valid images', function(done) {
-        blend(images, function(err, data, warnings) {
+        blend(images, function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/1.png', done);
         });
     });
 
     it('should return the correctly blended file for two valid images', function(done) {
-        blend([ images[2], images[3] ], function(err, data, warnings) {
+        blend([ images[2], images[3] ], function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/2.png', done);
         });
     });
@@ -49,9 +46,8 @@ describe('JPEG writing', function() {
             fs.readFileSync('test/fixture/2.png')
         ], {
             format: 'jpeg'
-        }, function(err, data, warnings) {
+        }, function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/6.jpg', 0.01, done);
         });
     });
@@ -63,9 +59,8 @@ describe('JPEG writing', function() {
         ], {
             format: 'jpeg',
             quality: 50
-        }, function(err, data, warnings) {
+        }, function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/7.jpg', 0.01, done);
         });
     });
@@ -76,9 +71,8 @@ describe('JPEG writing', function() {
             fs.readFileSync('test/fixture/2.png')
         ], {
             format: 'png'
-        }, function(err, data, warnings) {
+        }, function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/8.png', 0.01, done);
         });
     });
@@ -89,9 +83,8 @@ describe('JPEG writing', function() {
             fs.readFileSync('test/fixture/2.png')
         ], {
             // empty
-        }, function(err, data, warnings) {
+        }, function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/9.png', 0.01, done);
         });
     });
@@ -100,9 +93,8 @@ describe('JPEG writing', function() {
         blend([
             fs.readFileSync('test/fixture/1a.jpg'),
             fs.readFileSync('test/fixture/2.png')
-        ], function(err, data, warnings) {
+        ], function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/3.png', done);
         });
     });
@@ -111,9 +103,8 @@ describe('JPEG writing', function() {
         blend([
             fs.readFileSync('test/fixture/1b.jpg'),
             fs.readFileSync('test/fixture/2.png')
-        ], function(err, data, warnings) {
+        ], function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/4.png', done);
         });
     });
@@ -122,9 +113,8 @@ describe('JPEG writing', function() {
         blend([
             fs.readFileSync('test/fixture/1c.jpg'),
             fs.readFileSync('test/fixture/2.png')
-        ], function(err, data, warnings) {
+        ], function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/5.png', 0.01, done);
         });
     });
@@ -133,9 +123,8 @@ describe('JPEG writing', function() {
         blend([
             fs.readFileSync('test/fixture/105-2.png'),
             fs.readFileSync('test/fixture/105-1.png')
-        ], function(err, data, warnings) {
+        ], function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/105.png', done);
         });
     });

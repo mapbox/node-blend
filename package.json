@@ -16,7 +16,7 @@
         "rimraf": "~2.2.8"
     },
     "dependencies" : {
-        "mapnik": "3.x"
+        "mapnik": "https://github.com/mapnik/node-mapnik/tarball/master"
     },
     "main": "index.js",
     "scripts": {

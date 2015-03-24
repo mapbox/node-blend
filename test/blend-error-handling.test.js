@@ -163,14 +163,13 @@ describe('invalid images', function() {
     });
 
     it('should error out with "Incorrect bKGD chunk index value"', function(done) {
-        blend([ images[2] ], { reencode: true }, function(err, data, warnings) {
+        blend([ images[2] ], { reencode: true }, function(err, data) {
             if (err) return done(err);
             assert.ok(data.length > 600 && data.length < 1200, 'reencoding bogus image yields implausible size');
 
             // Check that we don't reencode the error.
-            blend([ data ], { reencode: true }, function(err, data2, warnings) {
+            blend([ data ], { reencode: true }, function(err, data2) {
                 if (err) return done(err);
-                assert.deepEqual(warnings, []);
                 assert.deepEqual(data, data2);
                 done();
             });

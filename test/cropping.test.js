@@ -15,17 +15,15 @@ var images = [
 
 describe('cropping', function() {
     it('should crop the image to width and height', function(done) {
-        blend(images, { width: 128, height: 128 }, function(err, data, warnings) {
+        blend(images, { width: 128, height: 128 }, function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/20.png', done);
         });
     });
 
     it('should expand the image to width and height', function(done) {
-        blend(images, { width: 384, height: 384 }, function(err, data, warnings) {
+        blend(images, { width: 384, height: 384 }, function(err, data) {
             if (err) return done(err);
-            assert.deepEqual(warnings, []);
             utilities.imageEqualsFile(data, 'test/fixture/results/21.png', done);
         });
     });
