@@ -21,9 +21,8 @@ describe('repeated blending', function() {
             res.writeHead(200);
             blendImages(10);
             function blendImages(i) {
-                blend(images, function(err, data, warnings) {
+                blend(images, function(err, data) {
                     if (err) return done(err);
-                    assert.deepEqual(warnings, []);
                     length = data.length;
                     if (i == 0) res.end(data);
                     else blendImages(i-1);

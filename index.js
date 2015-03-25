@@ -1,8 +1,10 @@
 var mapnik = require('mapnik');
 module.exports = mapnik.blend;
 module.exports.Palette = mapnik.Palette;
-module.exports.rgb2hsl2 = mapnik.rgb2hsl2;
-module.exports.hsl2rgb2 = mapnik.hsl2rgb2;
+module.exports.rgb2hsl2 = mapnik.rgb2hsl;
+module.exports.hsl2rgb2 = mapnik.hsl2rgb;
+module.exports.rgb2hsl = mapnik.rgb2hsl;
+module.exports.hsl2rgb = mapnik.hsl2rgb;
 
 var Palette = module.exports.Palette;
 Palette.prototype.clone = function() {
@@ -17,56 +19,13 @@ Palette.fromJSON = function(json) {
     return new Palette(new Buffer(palette, 'hex'), 'rgba');
 };
 
-module.exports.hsl2rgb = function(h, s, l) {
-    if (!s) return [l * 255, l * 255, l * 255];
-
-    var hueToRGB = function (m1, m2, h) {
-        h = (h + 1) % 1;
-        if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
-        if (h * 2 < 1) return m2;
-        if (h * 3 < 2) return m1 + (m2 - m1) * (0.66666 - h) * 6;
-        return m1;
-    };
-
-    var m2 = (l <= 0.5) ? l * (s + 1) : l + s - l * s;
-    var m1 = l * 2 - m2;
-    return [
-        parseInt(hueToRGB(m1, m2, h + 0.33333) * 255,10),
-        parseInt(hueToRGB(m1, m2, h) * 255,10),
-        parseInt(hueToRGB(m1, m2, h - 0.33333) * 255,10)
-    ];
-};
-
-var rgb2hsl = function(r, g, b){
-    r /= 255, g /= 255, b /= 255;
-    var max = Math.max(r, g, b);
-    var min = Math.min(r, g, b);
-    var delta = max - min;
-    var gamma = max + min;
-    var h = 0, s = 0, l = gamma / 2;
-
-    if (delta) {
-        s = l > 0.5 ? delta / (2 - gamma) : delta / gamma;
-        if (max == r && max != g) h = (g - b) / delta + (g < b ? 6 : 0);
-        if (max == g && max != b) h = (b - r) / delta + 2;
-        if (max == b && max != r) h = (r - g) / delta + 4;
-        h /= 6;
-    }
-
-    h = h > 1 ? 1 : h < 0 ? 0 : h;
-    s = s > 1 ? 1 : s < 0 ? 0 : s;
-    l = l > 1 ? 1 : l < 0 ? 0 : l;
-    return [h, s, l];
-};
-module.exports.rgb2hsl = rgb2hsl;
-
 module.exports.parseTintStringOld = function(str) {
     if (!str.length) return {};
 
     var options = {};
     var hex = str.match(/^#?([0-9a-f]{6})$/i);
     if (hex) {
-        var hsl = rgb2hsl(
+        var hsl = mapnik.rgb2hsl(
             parseInt(hex[1].substring(0, 2), 16),
             parseInt(hex[1].substring(2, 4), 16),
             parseInt(hex[1].substring(4, 6), 16)
@@ -102,7 +61,7 @@ module.exports.parseTintString = function(str) {
     var options = {};
     var hex = str.match(/^#?([0-9a-f]{6})$/i);
     if (hex) {
-        var hsl = rgb2hsl(
+        var hsl = mapnik.rgb2hsl(
             parseInt(hex[1].substring(0, 2), 16),
             parseInt(hex[1].substring(2, 4), 16),
             parseInt(hex[1].substring(4, 6), 16)

@@ -1,14 +1,14 @@
 {
     "name": "blend",
     "description": "High speed image blending and quantization",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "homepage": "http://github.com/mapbox/node-blend",
     "author": "Konstantin Käfer <kkaefer@gmail.com>",
     "repository": {
         "type": "git",
         "url": "https://github.com/mapbox/node-blend.git"
     },
-    "contributors"  : ["Dane Springmeyer <dane@mapbox.com>"],
+    "contributors"  : ["Dane Springmeyer <dane@mapbox.com>", "Blake Thompson <blake@mapbox.com>"],
     "licenses": [{ "type": "BSD" }],
     "devDependencies": {
         "mocha": "1.x",
@@ -16,7 +16,7 @@
         "rimraf": "~2.2.8"
     },
     "dependencies" : {
-        "mapnik": "3.x"
+        "mapnik": "~3.2.0"
     },
     "main": "index.js",
     "scripts": {
