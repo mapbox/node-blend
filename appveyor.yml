@@ -1,19 +1,16 @@
+os: Visual Studio 2015
+
 environment:
   matrix:
-    - nodejs_version: 0.10
-#    - nodejs_version: 0.11.13
+    - nodejs_version: 0.10.40
+    - nodejs_version: 0.12.7
 
 platform:
   - x64
   - x86
 
 install:
-  - ps: Install-Product node $env:nodejs_version $env:Platform
-  - ps: Start-FileDownload "http://mapbox.s3.amazonaws.com/windows-builds/visual-studio-runtimes/vcredist-VS2014-CTP4/vcredist_$env:Platform.exe"
-  - .\vcredist_%platform%.exe /q /norestart
-  - npm install
-  # tests are a long way off from working on windows - need to port to http-assert :)
-  #- npm test
+  - scripts\build-appveyor.bat
 
 build: OFF
 test: OFF

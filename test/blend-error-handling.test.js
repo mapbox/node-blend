@@ -179,7 +179,7 @@ describe('invalid images', function() {
     it('should report a bogus Huffman table definition', function(done) {
         blend([ images[2], images[3] ], function(err, data, warnings) {
             if (!err) return done(new Error('expected error'));
-            assert.equal(err.message, 'JPEG Reader: libjpeg could not read image: Corrupt JPEG data: 646 extraneous bytes before marker 0xc4');
+            assert.equal(err.message, 'JPEG Reader: libjpeg could not read image: Bogus Huffman table definition');
 
             // Test working state after error.
             blend([ images[2] ], { reencode: true }, done);

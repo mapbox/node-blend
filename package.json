@@ -16,7 +16,7 @@
         "rimraf": "~2.2.8"
     },
     "dependencies" : {
-        "mapnik": "~3.2.0"
+        "mapnik": "~3.4.3"
     },
     "main": "index.js",
     "scripts": {
