@@ -1,6 +1,6 @@
 # node-blend
 
-This module can rencode one or more images of the same size. It supports stiching multiple images together into a single image, alpha-compositing, color quantization, and various compression options to produce highly optimized output.
+This module can re-encode one or more images of the same size. It supports stiching multiple images together into a single image, alpha-compositing, color quantization, and various compression options to produce highly optimized output.
 
 [![Build Status](https://travis-ci.org/mapbox/node-blend.svg)](https://travis-ci.org/mapbox/node-blend)
 [![Build status](https://ci.appveyor.com/api/projects/status/e88smp2ln3tsuajb)](https://ci.appveyor.com/project/Mapbox/node-blend)
