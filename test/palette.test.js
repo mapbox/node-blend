@@ -17,23 +17,23 @@ var palettes = [
 
 describe('palette creation', function() {
     it('should create a palette from a string', function() {
-        var pal = new blend.Palette('\x01\x02\x03\x04');
+        var pal = new blend.Palette(new Buffer('\x01\x02\x03\x04', 'ascii'));
         assert.equal('[Palette 1 color #01020304]', pal.toString());
     });
 
     it('should throw for an invalid palette length', function() {
         assert['throws'](function() {
-            new blend.Palette('\x01\x02\x03');
+            new blend.Palette(new Buffer('\x01\x02\x03', 'ascii'));
         }, (/invalid palette length/));
     });
 
     it('should create an rgb palette', function() {
-        var pal = new blend.Palette('\x01\x02\x03', 'rgb');
+        var pal = new blend.Palette(new Buffer('\x01\x02\x03', 'ascii'), 'rgb');
         assert.equal('[Palette 1 color #010203]', pal.toString());
     });
 
     it('should create a palette with two colors', function() {
-        var pal = new blend.Palette('\xff\x09\x93\xFF\x01\x02\x03\x04');
+        var pal = new blend.Palette(new Buffer('\xff\x09\x93\xFF\x01\x02\x03\x04', 'ascii'));
         assert.equal('[Palette 2 colors #01020304 #ff0993]', pal.toString());
         assert.equal('\x01\x02\x03\x04\xff\x09\x93\xFF', pal.toBuffer().toString('binary'));
     });
