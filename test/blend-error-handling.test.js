@@ -90,18 +90,6 @@ describe('invalid arguments', function() {
         }, /Compression level must be between 0 and 9/);
     });
 
-    it('should not allow compression level above what miniz supports', function() {
-        assert.throws(function() {
-            blend([
-                fs.readFileSync('test/fixture/1c.jpg'),
-                fs.readFileSync('test/fixture/2.png')
-            ], {
-                compression:11,
-                encoder:'miniz'
-            }, function() {});
-        }, /Compression level must be between 0 and 10/);
-    });
-
     it('should not allow negative image dimensions', function() {
         assert.throws(function() {
             blend(images, { width: -20 }, function() {});
