@@ -1,5 +1,9 @@
 # Changlog
 
+## 1.2.0
+
+- Updated to mapnik 3.5.0
+
 ## 1.0.1
 
  - Loosen mapnik semver to 3.x.
