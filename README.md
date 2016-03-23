@@ -21,9 +21,29 @@ blend([ image1, image2 ], {
 }, function(err, result) {
     // result contains the blended result image compressed as JPEG.
 });
+
+blend([
+    { buffer: images[1], x: 20, y: 10 },
+    { buffer: images[0], x: -30, y: 90 }
+], {
+    width: 256,
+    height: 256
+}, function(err, data) {
+    // result contains the blended result image compressed as JPEG.
+});
 ```
 
 ### Options
+
+The first argument is an array of either Buffers containing image data, or
+Objects with the following potential properties:
+
+- `buffer`: Buffer containing image data
+- `x`: image offset in the X dimension
+- `y`: image offset in the Y dimension
+
+The second argument is an optional options Object with the following potential
+properties:
 
 - `format`: `jpeg`, `png`, or `webp`
 - `quality`: integer indicating the quality of the final image. Meaning and range differs per format. For JPEG and webp the range is from 0-100. It defaults to 80. The lower the number the lower image quality and smaller the final image size. For PNG range is from 2-256. It means the # of colors to reduce the image to using. The lower the number the lower image quality and smaller the final image size.
