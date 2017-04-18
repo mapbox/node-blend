@@ -1,5 +1,5 @@
 {
-  "name": "blend",
+  "name": "@mapbox/blend",
   "description": "High speed image blending and quantization",
   "version": "1.3.0",
   "homepage": "http://github.com/mapbox/node-blend",
