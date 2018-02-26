@@ -1,5 +1,14 @@
 # Changlog
 
+## 2.0.0
+
+- Updated to mapnik 3.7.0
+- Dropped windows support
+
+## 1.4.0
+
+- Updated to mapnik 3.6.2
+
 ## 1.3.0
 
 - Updated to mapnik 3.6.0
