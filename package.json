@@ -25,7 +25,7 @@
     "eslint-config-unstyled": "^1.1.0"
   },
   "dependencies": {
-    "mapnik": "~3.7.0"
+    "mapnik": "3.x || 4.x"
   },
   "main": "index.js",
   "scripts": {
