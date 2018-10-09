@@ -57,7 +57,7 @@ properties:
 
 # Installation
 
-    npm install blend@latest
+    npm install @mapbox/blend@latest
 
 # Development
 
