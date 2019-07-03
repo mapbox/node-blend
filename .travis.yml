@@ -1,8 +1,9 @@
 language: node_js
 
 node_js:
-  - 6
-  - 8
+  - 6.17.1
+  - 8.16.0
+  - 10.16.0
 
 addons:
   apt:
