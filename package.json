@@ -18,14 +18,14 @@
     }
   ],
   "devDependencies": {
-    "mocha": "1.x",
-    "mkdirp": "~0.5.0",
-    "rimraf": "~2.2.8",
+    "mocha": "6.x",
+    "mkdirp": "~0.5.1",
+    "rimraf": "~2.6.3",
     "eslint": "~1.00.0",
     "eslint-config-unstyled": "^1.1.0"
   },
   "dependencies": {
-    "mapnik": "3.x || 4.x"
+    "mapnik": "4.x"
   },
   "main": "index.js",
   "scripts": {
